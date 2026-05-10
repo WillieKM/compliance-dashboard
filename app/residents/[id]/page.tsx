@@ -170,12 +170,20 @@ export default async function ResidentProfilePage({
             Documents
           </h2>
 
-          <Link
-            href={`/documents/new?owner_type=resident&resident_id=${resident.id}`}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
-          >
-            + Upload Resident Document
-          </Link>
+          <div className="flex gap-2">
+            <Link
+              href={`/residents/${resident.id}/assessment`}
+              className="bg-amber-500 text-white px-4 py-2 rounded-lg hover:bg-amber-600 font-medium"
+            >
+              📋 New Assessment
+            </Link>
+            <Link
+              href={`/documents/new?owner_type=resident&resident_id=${resident.id}`}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+            >
+              + Upload Document
+            </Link>
+          </div>
         </div>
 
         {documentsError && (

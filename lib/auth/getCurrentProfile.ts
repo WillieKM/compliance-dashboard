@@ -1,14 +1,36 @@
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase/server";
 
-export async function getCurrentProfile() {
-  const { data: profile, error } = await supabase
-    .from("profiles")
-    .select("*")
-    .limit(1)
-    .maybeSingle();
+export type Profile = {
+  id: string;
+  full_name: string | null;
+  role: string | null;
+  facility_id: string;
+  organization_id: string;
+  organizations: {
+    id: string;
+    name: string;
+    care_settings: string[] | null;
+  } | null;
+};
 
-  console.log("TEMP PROFILE:", profile);
-  console.log("TEMP PROFILE ERROR:", error);
+export async function getCurrentProfile(): Promise<Profile | null> {
+  try {
+    const supabase = await createClient();
 
-  return profile;
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) return null;
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("id, full_name, role, facility_id, organization_id, organizations(id, name, care_settings)")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    return profile as Profile | null;
+  } catch {
+    return null;
+  }
 }

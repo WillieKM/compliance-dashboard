@@ -1,195 +1,121 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { getDashboardMetrics } from "@/lib/compliance/getDashboardMetrics";
+import { getAlerts } from "@/lib/compliance/getAlerts";
 import { getCurrentProfile } from "@/lib/auth/getCurrentProfile";
-import ComplianceOverviewChart from "../components/charts/ComplianceOverviewChart";
-import DocumentCategoryChart from "../components/charts/DocumentCategoryChart";
+import { ALL_CARE_SETTINGS } from "@/lib/config/careSettings";
 
 export const dynamic = "force-dynamic";
 
-export default async function DashboardPage() {
-  const metrics = await getDashboardMetrics();
+const COLOR_MAP: Record<string, { card: string; badge: string; btn: string }> = {
+  blue:   { card: "border-blue-200 bg-blue-50 hover:bg-blue-100",     badge: "bg-blue-600",   btn: "bg-blue-600 hover:bg-blue-700" },
+  amber:  { card: "border-amber-200 bg-amber-50 hover:bg-amber-100",  badge: "bg-amber-500",  btn: "bg-amber-500 hover:bg-amber-600" },
+  purple: { card: "border-purple-200 bg-purple-50 hover:bg-purple-100", badge: "bg-purple-600", btn: "bg-purple-600 hover:bg-purple-700" },
+  green:  { card: "border-teal-200 bg-teal-50 hover:bg-teal-100",     badge: "bg-teal-600",   btn: "bg-teal-600 hover:bg-teal-700" },
+};
+
+export default async function DashboardHubPage() {
   const profile = await getCurrentProfile();
+  if (!profile) redirect("/login");
 
-  if (!profile) {
-    return <div>No profile found.</div>;
-  }
+  const facilityId = profile.facility_id;
+  const orgName = profile.organizations?.name ?? "My Organization";
+  const activeSettings = profile.organizations?.care_settings ?? ALL_CARE_SETTINGS.map((s) => s.id);
+  const visibleSettings = ALL_CARE_SETTINGS.filter((s) => activeSettings.includes(s.id));
 
-  console.log("DASHBOARD METRICS:", metrics);
+  const [metrics, alerts] = await Promise.all([
+    getDashboardMetrics(facilityId),
+    getAlerts(facilityId),
+  ]);
+
+  const activeAlerts = alerts.filter((a) => !a.resolved);
+  const critical = activeAlerts.filter((a) => a.priority === "CRITICAL").length;
 
   return (
-    <div className="space-y-8">
-      {/* HERO */}
-      <div className="rounded-xl bg-blue-600 text-white p-8 shadow">
-        <p className="text-sm mb-3">
-          Facility Compliance Overview
+    <div className="max-w-6xl mx-auto space-y-10">
+      <div>
+        <p className="text-sm font-semibold uppercase tracking-wider text-slate-500 mb-1">
+          CareCompliance
         </p>
-
-        <h1 className="text-4xl font-bold mb-4">
-          CareCompliance Dashboard
-        </h1>
-
-        <p className="max-w-2xl">
-          Track required documents, resident records,
-          expiration alerts, and inspection readiness
-          from one central dashboard.
-        </p>
-      </div>
-      <div className="mt-8 max-w-md">
-  <label className="block text-sm font-medium text-white/90 mb-2">
-    Select Care Setting
-  </label>
-
-  <select
-    defaultValue="HOME_CARE"
-    className="w-full rounded-lg border border-white/20 bg-white text-gray-900 px-4 py-3 shadow"
-  >
-    <option value="HOME_CARE">
-      Home Care
-    </option>
-
-    <option value="AFH">
-      Adult Family Home
-    </option>
-
-    <option value="ASSISTED_LIVING">
-      Assisted Living
-    </option>
-  </select>
-
-  <p className="mt-3 text-sm text-white/80">
-    Home Care is optimized for caregiver credentials, TB tests,
-    CPR certifications, background checks, and onboarding readiness.
-  </p>
-</div>
-
-      {/* METRIC CARDS */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-white rounded-xl shadow p-6 border">
-          <p className="text-gray-500">
-            Compliance Score
-          </p>
-
-          <p className="text-5xl font-bold text-blue-600 mt-3">
-            {metrics.complianceScore}%
-          </p>
-
-          <p className="text-gray-500 mt-3">
-            Survey readiness score
-          </p>
-        </div>
-
-        <div className="bg-white rounded-xl shadow p-6 border">
-          <p className="text-gray-500">
-            Expired Documents
-          </p>
-
-          <p className="text-5xl font-bold text-red-600 mt-3">
-            {metrics.expiredDocuments}
-          </p>
-
-          <p className="text-gray-500 mt-3">
-            Require immediate attention
-          </p>
-        </div>
-
-        <div className="bg-white rounded-xl shadow p-6 border">
-          <p className="text-gray-500">
-            Expiring Soon
-          </p>
-
-          <p className="text-5xl font-bold text-yellow-600 mt-3">
-            {metrics.expiringDocuments}
-          </p>
-
-          <p className="text-gray-500 mt-3">
-            Due within 30 days
-          </p>
-        </div>
-
-        <div className="bg-white rounded-xl shadow p-6 border">
-          <p className="text-gray-500">
-            Residents
-          </p>
-
-          <p className="text-5xl font-bold text-green-600 mt-3">
-            {metrics.residentCompliance.total}
-          </p>
-
-          <p className="text-gray-500 mt-3">
-            Active resident records
-          </p>
-        </div>
+        <h1 className="text-4xl font-bold text-slate-900">{orgName}</h1>
+        <p className="mt-2 text-slate-500">Select a care setting to view its compliance dashboard.</p>
       </div>
 
-      {/* CHART */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <ComplianceOverviewChart
-          complianceScore={metrics.complianceScore}
-          expiredDocuments={metrics.expiredDocuments}
-          expiringDocuments={metrics.expiringDocuments}
-        />
-      </div>
-
-      {/* ACTIONS + READINESS */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white rounded-xl shadow p-6 border">
-          <h2 className="text-2xl font-bold mb-5">
-            Quick Actions
-          </h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Link
-              href="/residents/new"
-              className="bg-blue-600 text-white text-center px-4 py-4 rounded-lg hover:bg-blue-700"
-            >
-              + Add Resident
-            </Link>
-
-            <Link
-              href="/documents/new"
-              className="bg-green-600 text-white text-center px-4 py-4 rounded-lg hover:bg-green-700"
-            >
-              + Upload Document
-            </Link>
-
-            <Link
-              href="/compliance"
-              className="bg-slate-900 text-white text-center px-4 py-4 rounded-lg hover:bg-slate-800"
-            >
-              View Checklist
-            </Link>
-
-            <Link
-              href="/alerts"
-              className="bg-yellow-500 text-white text-center px-4 py-4 rounded-lg hover:bg-yellow-600"
-            >
-              View Alerts
-            </Link>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {[
+          { label: "Overall Compliance", value: `${metrics.complianceAverage}%`, cls: "text-blue-700" },
+          { label: "Inspection Readiness", value: `${metrics.inspectionReadiness}%`, cls: metrics.inspectionReadiness >= 90 ? "text-green-600" : metrics.inspectionReadiness >= 70 ? "text-amber-600" : "text-red-600" },
+          { label: "Expired Documents", value: metrics.expiredDocs, cls: metrics.expiredDocs > 0 ? "text-red-700" : "text-slate-900" },
+          { label: "Active Alerts", value: activeAlerts.length, cls: activeAlerts.length > 0 ? "text-amber-600" : "text-slate-900" },
+        ].map((s) => (
+          <div key={s.label} className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">{s.label}</p>
+            <p className={`text-3xl font-bold mt-1 ${s.cls}`}>{s.value}</p>
           </div>
-        </div>
+        ))}
+      </div>
 
-        <div className="bg-white rounded-xl shadow p-6 border">
-          <h2 className="text-2xl font-bold mb-5">
-            Inspection Readiness
-          </h2>
-
-          <div className="w-full bg-gray-200 rounded-full h-4 mb-5">
-            <div
-              className="bg-blue-600 h-4 rounded-full"
-              style={{
-                width: `${metrics.complianceScore}%`,
-              }}
-            />
+      {critical > 0 && (
+        <div className="rounded-xl bg-red-50 border-2 border-red-200 p-4 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">⚠️</span>
+            <p className="font-semibold text-red-900">
+              {critical} critical alert{critical > 1 ? "s" : ""} require immediate action.
+            </p>
           </div>
-
-          <p className="text-gray-700">
-            {metrics.complianceScore >= 90
-              ? "Strong readiness. Continue monitoring upcoming expirations."
-              : metrics.complianceScore >= 70
-              ? "Moderate readiness. Review expiring and expired documents."
-              : "Needs attention. Complete missing or expired compliance items before inspection."}
-          </p>
+          <Link href="/alerts" className="shrink-0 text-sm font-semibold text-red-700 hover:underline">
+            View alerts →
+          </Link>
         </div>
+      )}
+
+      <div>
+        <h2 className="text-xl font-bold text-slate-900 mb-4">Your Dashboards</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          {visibleSettings.map((s) => {
+            const colors = COLOR_MAP[s.color] ?? COLOR_MAP.blue;
+            return (
+              <Link
+                key={s.id}
+                href={`/dashboard/${s.slug}`}
+                className={`group rounded-2xl border-2 p-6 transition-all shadow-sm ${colors.card}`}
+              >
+                <div className="flex items-start justify-between mb-4">
+                  <div>
+                    <h3 className="text-xl font-bold text-slate-900">{s.label}</h3>
+                    <p className="text-sm text-slate-500 mt-1">{s.description}</p>
+                  </div>
+                  <span className={`${colors.badge} text-white text-xs font-bold px-2.5 py-1 rounded-full`}>
+                    {s.documents.length} doc types
+                  </span>
+                </div>
+                <div className="space-y-1.5 mb-5">
+                  {s.documents.filter((d) => d.critical).slice(0, 3).map((d) => (
+                    <div key={d.id} className="flex items-center gap-2 text-sm text-slate-600">
+                      <span>{d.icon}</span><span>{d.label}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className={`${colors.btn} text-white text-sm font-bold px-4 py-2.5 rounded-lg inline-flex items-center gap-2`}>
+                  Open Dashboard →
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {[
+          { icon: "👥", label: "Staff", href: "/staff" },
+          { icon: "🏠", label: "Residents", href: "/residents" },
+          { icon: "📄", label: "Documents", href: "/documents" },
+          { icon: "🔔", label: "Alerts", href: "/alerts" },
+        ].map((l) => (
+          <Link key={l.href} href={l.href} className="bg-white rounded-xl border border-slate-200 p-4 flex items-center gap-3 hover:shadow-md transition-shadow text-slate-700 font-medium">
+            <span className="text-xl">{l.icon}</span><span>{l.label}</span>
+          </Link>
+        ))}
       </div>
     </div>
   );

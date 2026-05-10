@@ -9,11 +9,7 @@ import {
   Legend,
 } from "recharts";
 
-const COLORS = [
-  "#2563eb",
-  "#dc2626",
-  "#eab308",
-];
+const COLORS = ["#2563eb", "#dc2626", "#eab308"];
 
 export default function ComplianceOverviewChart({
   complianceScore,
@@ -25,55 +21,29 @@ export default function ComplianceOverviewChart({
   expiringDocuments: number;
 }) {
   const data = [
-    {
-      name: "Compliant",
-      value: complianceScore,
-    },
-    {
-      name: "Expired",
-      value: expiredDocuments,
-    },
-    {
-      name: "Expiring Soon",
-      value: expiringDocuments,
-    },
+    { name: "Compliant", value: complianceScore },
+    { name: "Expired", value: expiredDocuments },
+    { name: "Expiring Soon", value: expiringDocuments },
   ];
 
   return (
-    <div className="bg-white rounded-xl shadow p-6 border w-full">
-      <h2 className="text-2xl font-bold mb-6">
-        Compliance Overview
-      </h2>
-
-      <div
-        style={{
-          width: "100%",
-          height: 350,
-        }}
-      >
-        <ResponsiveContainer>
-          <PieChart>
-            <Pie
-              data={data}
-              dataKey="value"
-              cx="50%"
-              cy="50%"
-              outerRadius={110}
-              label
-            >
-              {data.map((_, index) => (
-                <Cell
-                  key={index}
-                  fill={COLORS[index % COLORS.length]}
-                />
-              ))}
-            </Pie>
-
-            <Tooltip />
-            <Legend />
-          </PieChart>
-        </ResponsiveContainer>
-      </div>
-    </div>
+    <ResponsiveContainer width="100%" height="100%">
+      <PieChart>
+        <Pie
+          data={data}
+          dataKey="value"
+          cx="50%"
+          cy="50%"
+          outerRadius={110}
+          label
+        >
+          {data.map((_, index) => (
+            <Cell key={index} fill={COLORS[index % COLORS.length]} />
+          ))}
+        </Pie>
+        <Tooltip />
+        <Legend />
+      </PieChart>
+    </ResponsiveContainer>
   );
 }
