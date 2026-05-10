@@ -2,11 +2,13 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import nodemailer from "nodemailer";
 
-// Uses service role key to bypass RLS and check ALL tenants
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+// Created inside handler so env vars are read at runtime, not build time
+function getAdmin() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+}
 
 function getDiff(dateStr: string) {
   return Math.ceil(
@@ -29,6 +31,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const supabaseAdmin = getAdmin();
   const today = new Date().toISOString().split("T")[0];
   let alertsCreated = 0;
   let emailsSent = 0;
