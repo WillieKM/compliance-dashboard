@@ -15,7 +15,7 @@ const navItems = [
   { label: "Documents",  href: "/documents" },
   { label: "Alerts",     href: "/alerts" },
   { label: "Checklist",  href: "/checklist" },
-  { label: "Billing",    href: "/billing" },
+  // { label: "Billing", href: "/billing" }, // re-enable when Stripe is configured
 ];
 
 export default async function Sidebar() {
