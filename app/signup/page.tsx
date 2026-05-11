@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
@@ -12,7 +12,7 @@ const CARE_SETTING_OPTIONS = [
   { id: "MULTI_SERVICE",  label: "Multi-Service Agency",   icon: "🌐", desc: "Multiple care service lines" },
 ];
 
-export default function SignupPage() {
+function SignupForm() {
   const searchParams = useSearchParams();
   const [loading, setLoading]               = useState(false);
   const [error, setError]                   = useState<string | null>(null);
@@ -287,5 +287,17 @@ export default function SignupPage() {
         </form>
       </div>
     </div>
+  );
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-slate-50">
+        <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    }>
+      <SignupForm />
+    </Suspense>
   );
 }
