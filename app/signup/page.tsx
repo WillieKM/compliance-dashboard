@@ -58,31 +58,8 @@ function SignupForm() {
       return;
     }
 
-    // Validate invite code
     if (!inviteCode.trim()) {
       setError("An invite code is required to sign up.");
-      setLoading(false);
-      return;
-    }
-    const { data: codeRow } = await supabase
-      .from("invite_codes")
-      .select("id, used, expires_at")
-      .eq("code", inviteCode.toUpperCase().trim())
-      .maybeSingle();
-
-    if (!codeRow) {
-      setError("Invalid invite code. Please check with your administrator.");
-      setLoading(false);
-      return;
-    }
-    if (codeRow.used) {
-      setError("This invite code has already been used.");
-      setLoading(false);
-      return;
-    }
-    if (codeRow.expires_at && new Date(codeRow.expires_at) < new Date()) {
-      setError("This invite code has expired. Please request a new one.");
-      setLoading(false);
       return;
     }
 
@@ -99,53 +76,24 @@ function SignupForm() {
       return;
     }
 
-    // 1 — Create auth user (with 15s timeout to prevent hanging)
-    const timeout = new Promise<{ error: { message: string } }>(res =>
-      setTimeout(() => res({ error: { message: "Request timed out. Please try again." } }), 15000)
-    );
-
-    const { error: signUpError } = await Promise.race([
-      supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: { company_name: companyName, full_name: fullName || email },
-          emailRedirectTo: `${window.location.origin}/dashboard`,
-        },
+    // Call server-side signup API (uses service role, auto-confirms, no client-side hanging)
+    const res = await fetch("/api/auth/signup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email, password, companyName, fullName: fullName || email,
+        careSetting: selectedSetting,
+        inviteCode: inviteCode.toUpperCase().trim(),
       }),
-      timeout,
-    ]);
+    });
 
-    if (signUpError) {
-      setError(signUpError.message.includes("already")
-        ? "This email is already registered. Please use a different email."
-        : signUpError.message);
+    const result = await res.json();
+
+    if (result.error) {
+      setError(result.error);
       setLoading(false);
       return;
     }
-
-    // 2 — Fire all post-signup work in background, never block the UI
-    setTimeout(async () => {
-      try {
-        const { data: profileData } = await supabase
-          .from("profiles")
-          .select("organization_id")
-          .maybeSingle();
-
-        if (profileData?.organization_id) {
-          await supabase
-            .from("organizations")
-            .update({ care_settings: [selectedSetting] })
-            .eq("id", profileData.organization_id);
-        }
-      } catch {}
-
-      fetch("/api/admin/invites/use", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code: inviteCode.toUpperCase().trim(), usedBy: email }),
-      }).catch(() => {});
-    }, 2000);
 
     setDone(true);
     setLoading(false);
