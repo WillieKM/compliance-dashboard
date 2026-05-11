@@ -103,13 +103,13 @@ export default async function Sidebar() {
       {/* Public */}
       <div className="mt-4 border-t border-slate-100 pt-4">
         <p className="px-2 mb-1.5 text-xs font-semibold uppercase tracking-wider text-slate-400">Public Links</p>
-        <Link href="/apply" className="block rounded-lg px-3 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50 transition-colors">
-          📋 Staff Application ↗
-        </Link>
         {orgSlug ? (
           <>
             <Link href={`/portal/${orgSlug}`} className="block rounded-lg px-3 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50 transition-colors">
               🔐 Branded Login ↗
+            </Link>
+            <Link href={`/portal/${orgSlug}/apply`} className="block rounded-lg px-3 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50 transition-colors">
+              📋 Staff Application ↗
             </Link>
             <Link href={`/portal/${orgSlug}/clock-in`} className="block rounded-lg px-3 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50 transition-colors">
               🕐 Staff Clock In ↗
