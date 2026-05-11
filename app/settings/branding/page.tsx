@@ -22,6 +22,7 @@ export default function BrandingPage() {
   const [logoUrl, setLogoUrl]           = useState<string | null>(null);
   const [orgId, setOrgId]               = useState<string | null>(null);
   const [facilityId, setFacilityId]     = useState<string | null>(null);
+  const [careSetting, setCareSetting]   = useState("HOME_CARE");
   const [saving, setSaving]             = useState(false);
   const [uploading, setUploading]       = useState(false);
   const [saved, setSaved]               = useState(false);
@@ -43,6 +44,8 @@ export default function BrandingPage() {
         setTagline(org.tagline ?? "");
         setPrimaryColor(org.primary_color ?? "#1a3a52");
         setLogoUrl(org.logo_url ?? null);
+        const settings: string[] = (org.care_settings as unknown as string[]) ?? [];
+        setCareSetting(settings[0] ?? "HOME_CARE");
       }
       setFacilityId(profile?.facility_id ?? null);
     }
@@ -86,6 +89,7 @@ export default function BrandingPage() {
         tagline,
         primary_color: primaryColor,
         logo_url: logoUrl,
+        care_settings: [careSetting],
       })
       .eq("id", orgId);
 
@@ -159,6 +163,17 @@ export default function BrandingPage() {
               Your clients and staff will use:{" "}
               <span className="font-mono text-blue-600">{portalUrl}</span>
             </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Care Setting</label>
+            <select value={careSetting} onChange={(e) => setCareSetting(e.target.value)} className={inp}>
+              <option value="HOME_CARE">🏥 Home Care Agency</option>
+              <option value="AFH">🏠 Adult Family Home</option>
+              <option value="ASSISTED_LIVING">🏢 Assisted Living Facility</option>
+              <option value="MULTI_SERVICE">🌐 Multi-Service Agency</option>
+            </select>
+            <p className="text-xs text-slate-400 mt-1">This controls which compliance dashboard appears in your account.</p>
           </div>
 
           <div>

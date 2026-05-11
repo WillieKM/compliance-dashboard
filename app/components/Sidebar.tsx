@@ -1,5 +1,4 @@
 import Link from "next/link";
-import Image from "next/image";
 import { getCurrentProfile, getOrgColor } from "@/lib/auth/getCurrentProfile";
 
 const ALL_DASHBOARDS = [
@@ -17,12 +16,11 @@ const navItems = [
   { label: "Alerts",     href: "/alerts" },
   { label: "Checklist",  href: "/checklist" },
   { label: "Billing",    href: "/billing" },
-  { label: "⚙ Branding",      href: "/settings/branding" },
-  { label: "🔑 Invite Codes", href: "/admin/invites" },
 ];
 
 export default async function Sidebar() {
-  const profile = await getCurrentProfile();
+  const profile    = await getCurrentProfile();
+  const isSuperAdmin = profile?.is_super_admin ?? false;
   const orgName    = profile?.organizations?.name      ?? "CareCompliance";
   const orgSlug    = profile?.organizations?.slug      ?? null;
   const logoUrl    = profile?.organizations?.logo_url  ?? null;
@@ -48,6 +46,15 @@ export default async function Sidebar() {
           <p className="text-xs text-white/60 truncate">{tagline}</p>
         </div>
       </div>
+
+      {/* Super admin badge */}
+      {isSuperAdmin && (
+        <Link href="/super-admin"
+          className="mb-4 flex items-center gap-2 rounded-xl px-3 py-2.5 bg-yellow-400 hover:bg-yellow-300 transition-colors">
+          <span className="text-base">👑</span>
+          <span className="text-sm font-bold text-slate-900">Platform Admin</span>
+        </Link>
+      )}
 
       {/* Care setting dashboards */}
       <div className="mb-4">
@@ -79,6 +86,17 @@ export default async function Sidebar() {
               {item.label}
             </Link>
           ))}
+          {/* Only super admin sees Branding and Invite Codes */}
+          {isSuperAdmin && (
+            <>
+              <Link href="/settings/branding" className="block rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-slate-50 hover:text-slate-900 transition-colors">
+                ⚙ Branding
+              </Link>
+              <Link href="/admin/invites" className="block rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-slate-50 hover:text-slate-900 transition-colors">
+                🔑 Invite Codes
+              </Link>
+            </>
+          )}
         </nav>
       </div>
 
@@ -97,17 +115,26 @@ export default async function Sidebar() {
 
       <div className="mt-auto pt-4">
         <div className="rounded-xl p-4 text-white" style={{ backgroundColor: brandColor }}>
-          <p className="text-sm font-bold">Your Portal Link</p>
-          {orgSlug ? (
-            <p className="text-xs mt-1 opacity-70 break-all font-mono">
-              {process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/portal/{orgSlug}
-            </p>
+          {isSuperAdmin ? (
+            <>
+              <p className="text-sm font-bold">Platform Owner</p>
+              <p className="text-xs mt-1 opacity-70">You manage all companies</p>
+              <Link href="/super-admin" className="mt-2 block text-center bg-white text-xs font-bold rounded-lg py-1.5 hover:opacity-90" style={{ color: brandColor }}>
+                Open Admin Panel →
+              </Link>
+            </>
           ) : (
-            <p className="text-xs mt-1 opacity-70">Set up in Branding settings</p>
+            <>
+              <p className="text-sm font-bold">Your Portal</p>
+              {orgSlug ? (
+                <p className="text-xs mt-1 opacity-70 break-all font-mono">
+                  {process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/portal/{orgSlug}
+                </p>
+              ) : (
+                <p className="text-xs mt-1 opacity-70">Contact admin to set up your portal</p>
+              )}
+            </>
           )}
-          <Link href="/settings/branding" className="mt-2 block text-center bg-white text-xs font-bold rounded-lg py-1.5 hover:opacity-90" style={{ color: brandColor }}>
-            Customize Brand →
-          </Link>
         </div>
       </div>
     </aside>

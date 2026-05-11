@@ -16,6 +16,7 @@ export type Profile = {
   role: string | null;
   facility_id: string;
   organization_id: string;
+  is_super_admin: boolean;
   organizations: OrgBranding | null;
 };
 
@@ -28,7 +29,7 @@ export async function getCurrentProfile(): Promise<Profile | null> {
 
     const { data: profile } = await supabase
       .from("profiles")
-      .select("id, full_name, role, facility_id, organization_id, organizations(id, name, slug, primary_color, logo_url, tagline, care_settings)")
+      .select("id, full_name, role, facility_id, organization_id, is_super_admin, organizations(id, name, slug, primary_color, logo_url, tagline, care_settings)")
       .eq("id", user.id)
       .maybeSingle();
 
