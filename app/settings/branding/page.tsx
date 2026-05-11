@@ -237,21 +237,36 @@ export default function BrandingPage() {
           </div>
         </div>
 
-        {/* Your dedicated portal link */}
+        {/* Your dedicated portal links */}
         <div className="rounded-2xl border-2 p-5" style={{ borderColor: primaryColor + "40", backgroundColor: primaryColor + "08" }}>
           <h2 className="font-bold text-slate-900 mb-2">Your Dedicated Portal Links</h2>
+          <p className="text-xs text-slate-500 mb-3">Click to open · Click the copy icon to share</p>
           <div className="space-y-2">
             {[
-              { label: "Branded Login",     path: "" },
-              { label: "Staff Clock In",    path: "/clock-in" },
-              { label: "Caregiver Notes",   path: "/notes" },
-              { label: "Staff Application", path: "/apply" },
-            ].map(({ label, path }) => (
-              <div key={label} className="flex items-center justify-between bg-white rounded-lg px-3 py-2 border border-slate-200">
-                <span className="text-xs font-semibold text-slate-600">{label}</span>
-                <code className="text-xs text-blue-600 font-mono">{portalUrl}{path}</code>
-              </div>
-            ))}
+              { label: "🔐 Branded Login",     path: "",          icon: "🔐" },
+              { label: "🕐 Staff Clock In",    path: "/clock-in", icon: "🕐" },
+              { label: "📝 Caregiver Notes",   path: "/notes",    icon: "📝" },
+              { label: "📋 Staff Application", path: "/apply",    icon: "📋" },
+            ].map(({ label, path }) => {
+              const url = `${portalUrl}${path}`;
+              return (
+                <div key={label} className="flex items-center gap-2 bg-white rounded-lg px-3 py-2 border border-slate-200">
+                  <span className="text-xs font-semibold text-slate-600 w-36 shrink-0">{label}</span>
+                  <a href={url} target="_blank" rel="noreferrer"
+                    className="flex-1 text-xs text-blue-600 font-mono hover:underline truncate">
+                    {url}
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => { navigator.clipboard.writeText(url); }}
+                    className="text-xs px-2 py-1 rounded bg-slate-100 text-slate-600 hover:bg-blue-100 hover:text-blue-700 shrink-0 transition-colors"
+                    title="Copy link"
+                  >
+                    Copy
+                  </button>
+                </div>
+              );
+            })}
           </div>
         </div>
 
