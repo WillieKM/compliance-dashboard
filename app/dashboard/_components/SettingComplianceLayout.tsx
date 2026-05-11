@@ -13,13 +13,16 @@ interface Props {
 
 // path: relative to compliance base; externalHref: absolute URL for shared modules
 const NAV_ITEMS = [
-  { key: "overview",   label: "Overview",         icon: "📊", path: "",         externalHref: null },
-  { key: "survey",     label: "Survey Checklist", icon: "✅", path: "/survey",   externalHref: null },
-  { key: "personnel",  label: "Personnel",        icon: "👥", path: null,        externalHref: "/compliance/personnel" },
-  { key: "training",   label: "Training",         icon: "📚", path: null,        externalHref: "/compliance/training" },
-  { key: "clients",    label: "Clients",          icon: "🏠", path: null,        externalHref: "/compliance/clients" },
-  { key: "complaints", label: "Complaints",       icon: "📋", path: null,        externalHref: "/compliance/complaints" },
-  { key: "reports",    label: "Reports",          icon: "📄", path: null,        externalHref: "/compliance/reports" },
+  { key: "overview",    label: "Overview",         icon: "📊", path: "",         externalHref: null, settingOnly: null },
+  { key: "survey",      label: "Survey Checklist", icon: "✅", path: "/survey",   externalHref: null, settingOnly: null },
+  { key: "personnel",   label: "Personnel",        icon: "👥", path: null,        externalHref: "/compliance/personnel", settingOnly: null },
+  { key: "training",    label: "Training",         icon: "📚", path: null,        externalHref: "/compliance/training",  settingOnly: null },
+  { key: "clients",     label: "Clients",          icon: "🏠", path: null,        externalHref: "/compliance/clients",   settingOnly: null },
+  { key: "complaints",  label: "Complaints",       icon: "📋", path: null,        externalHref: "/compliance/complaints", settingOnly: null },
+  { key: "reports",     label: "Reports",          icon: "📄", path: null,        externalHref: "/compliance/reports",   settingOnly: null },
+  // AFH-only tabs
+  { key: "medications", label: "MAR",              icon: "💊", path: null,        externalHref: "/dashboard/afh/medications", settingOnly: "afh" },
+  { key: "fire-drills", label: "Fire Drills",      icon: "🔥", path: null,        externalHref: "/dashboard/afh/fire-drills", settingOnly: "afh" },
 ];
 
 export default function SettingComplianceLayout({
@@ -53,7 +56,7 @@ export default function SettingComplianceLayout({
       {/* Compliance sub-nav */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm mb-6 overflow-x-auto">
         <div className="flex min-w-max">
-          {NAV_ITEMS.map((item) => {
+          {NAV_ITEMS.filter(item => !item.settingOnly || item.settingOnly === settingSlug).map((item) => {
             const href = item.externalHref ?? (item.path ? `${base}${item.path}` : base);
             const isActive = item.externalHref
               ? pathname.startsWith(item.externalHref)

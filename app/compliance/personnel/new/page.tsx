@@ -66,6 +66,8 @@ export default async function NewPersonnelPage({
 
     const perfEvalDate    = String(formData.get("last_performance_eval_date") || "") || null;
     const perfEvalDueDate = String(formData.get("performance_eval_due_date") || "") || null;
+    const foodHandlerDate   = String(formData.get("food_handler_permit_date") || "") || null;
+    const foodHandlerExpiry = String(formData.get("food_handler_permit_expiry") || "") || null;
     const notes           = String(formData.get("documentation_notes") || "") || null;
 
     const partial: Partial<PersonnelCompliance> = {
@@ -119,6 +121,8 @@ export default async function NewPersonnelPage({
       annual_training_due_date: annualTrainingDue,
       last_performance_eval_date: perfEvalDate,
       performance_eval_due_date: perfEvalDueDate,
+      food_handler_permit_date:   foodHandlerDate,
+      food_handler_permit_expiry: foodHandlerExpiry,
       compliance_status: status,
       missing_documents: missing,
       expiring_documents: expiring,
@@ -310,6 +314,19 @@ export default async function NewPersonnelPage({
             </Field>
             <Field label="Next Evaluation Due">
               <input type="date" name="performance_eval_due_date" className={input} />
+            </Field>
+          </div>
+        </Section>
+
+        {/* Food Handler Permit (AFH requirement) */}
+        <Section title="Food Handler Permit" wac="WAC 388-76-10080">
+          <p className="text-xs text-slate-500 mb-3">Required for all AFH staff who handle or serve food.</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Field label="Permit Issue Date">
+              <input type="date" name="food_handler_permit_date" className={input} />
+            </Field>
+            <Field label="Permit Expiry Date">
+              <input type="date" name="food_handler_permit_expiry" className={input} />
             </Field>
           </div>
         </Section>
