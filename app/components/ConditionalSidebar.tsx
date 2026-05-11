@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 
-const PUBLIC_PATHS = ["/apply", "/login", "/signup", "/dashboard/home-care/visits/clock-in", "/dashboard/home-care/visits/notes", "/portal"];
+const PUBLIC_PATHS = ["/apply", "/login", "/signup", "/forgot-password", "/reset-password", "/dashboard/home-care/visits/clock-in", "/dashboard/home-care/visits/notes", "/portal"];
 
 export default function ConditionalSidebar({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
