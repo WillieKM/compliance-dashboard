@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { supabase } from "@/lib/supabase";
 
 type OrgBrand = { name: string; primary_color: string | null; logo_url: string | null; tagline: string | null };
 
@@ -25,19 +24,14 @@ export default function BrandedNotesPage() {
 
   useEffect(() => {
     async function load() {
-      const [orgRes, profileRes] = await Promise.all([
-        supabase.from("organizations").select("name,primary_color,logo_url,tagline").eq("slug", slug).maybeSingle(),
-        supabase.from("profiles").select("facility_id").maybeSingle(),
+      const [orgData, staffData, resData] = await Promise.all([
+        fetch(`/api/portal/${slug}/org`).then(r => r.ok ? r.json() : null).catch(() => null),
+        fetch(`/api/portal/${slug}/staff`).then(r => r.ok ? r.json() : []).catch(() => []),
+        fetch(`/api/portal/${slug}/residents`).then(r => r.ok ? r.json() : []).catch(() => []),
       ]);
-      setOrg(orgRes.data ?? { name: "Care Agency", primary_color: "#1a3a52", logo_url: null, tagline: null });
-      if (profileRes.data?.facility_id) {
-        const fid = profileRes.data.facility_id;
-        const [s, r] = await Promise.all([
-          supabase.from("staff").select("id,first_name,last_name").eq("facility_id", fid),
-          supabase.from("residents").select("id,first_name,last_name").eq("facility_id", fid),
-        ]);
-        setStaffList(s.data ?? []); setResidents(r.data ?? []);
-      }
+      setOrg(orgData ?? { name: "Care Agency", primary_color: "#1a3a52", logo_url: null, tagline: null });
+      setStaffList(staffData ?? []);
+      setResidents(resData ?? []);
     }
     load();
   }, [slug]);
@@ -46,19 +40,17 @@ export default function BrandedNotesPage() {
     e.preventDefault();
     if (!caregiverName || !clientName || !notes.trim()) { setError("Name, client, and notes are required"); return; }
     setLoading(true); setError(null);
-    const { data: profile } = await supabase.from("profiles").select("facility_id").maybeSingle();
-    const { data: visit } = await supabase.from("care_visits").insert({
-      facility_id: profile?.facility_id, staff_id: staffId||null, resident_id: residentId||null,
-      caregiver_name: caregiverName, client_name: clientName, care_setting: "HOME_CARE",
-      clock_in_time: `${noteDate}T00:00:00Z`, status: "completed",
-      notes: `[${noteType}] ${notes}`,
-    }).select().single();
-    if (visit) {
-      await supabase.from("visit_service_reports").insert({
-        visit_id: visit.data?.id, facility_id: profile?.facility_id,
-        caregiver_notes: notes, adl_checklist: [],
-      });
-    }
+    const res = await fetch(`/api/portal/${slug}/visit`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "submit_notes",
+        caregiverName, clientName, staffId: staffId||null, residentId: residentId||null,
+        noteDate, noteType, notes,
+      }),
+    });
+    const data = await res.json();
+    if (data.error) { setError(data.error); setLoading(false); return; }
     setDone(true); setLoading(false);
   }
 
