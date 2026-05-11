@@ -101,14 +101,24 @@ export default async function Sidebar() {
 
       {/* Public */}
       <div className="mt-4 border-t border-slate-100 pt-4">
-        <p className="px-2 mb-1.5 text-xs font-semibold uppercase tracking-wider text-slate-400">Public</p>
+        <p className="px-2 mb-1.5 text-xs font-semibold uppercase tracking-wider text-slate-400">Public Links</p>
         <Link href="/apply" className="block rounded-lg px-3 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50 transition-colors">
-          Staff Application Form ↗
+          📋 Staff Application ↗
         </Link>
-        {orgSlug && (
-          <Link href={`/portal/${orgSlug}`} className="block rounded-lg px-3 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50 transition-colors">
-            Your Portal ↗
-          </Link>
+        {orgSlug ? (
+          <>
+            <Link href={`/portal/${orgSlug}`} className="block rounded-lg px-3 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50 transition-colors">
+              🔐 Branded Login ↗
+            </Link>
+            <Link href={`/portal/${orgSlug}/clock-in`} className="block rounded-lg px-3 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50 transition-colors">
+              🕐 Staff Clock In ↗
+            </Link>
+            <Link href={`/portal/${orgSlug}/notes`} className="block rounded-lg px-3 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50 transition-colors">
+              📝 Caregiver Notes ↗
+            </Link>
+          </>
+        ) : (
+          <p className="px-3 py-1.5 text-xs text-slate-400">Set up Branding to get portal links</p>
         )}
       </div>
 
