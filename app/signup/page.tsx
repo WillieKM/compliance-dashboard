@@ -15,20 +15,14 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
-  const [selectedSettings, setSelectedSettings] = useState<string[]>(["HOME_CARE"]);
-
-  function toggleSetting(id: string) {
-    setSelectedSettings((prev) =>
-      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]
-    );
-  }
+  const [selectedSetting, setSelectedSetting] = useState<string>("HOME_CARE");
 
   async function handleSignup(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
 
-    if (selectedSettings.length === 0) {
-      setError("Please select at least one care setting.");
+    if (!selectedSetting) {
+      setError("Please select your care setting.");
       return;
     }
 
@@ -72,7 +66,7 @@ export default function SignupPage() {
     if (profileData?.organization_id) {
       await supabase
         .from("organizations")
-        .update({ care_settings: selectedSettings })
+        .update({ care_settings: [selectedSetting] })
         .eq("id", profileData.organization_id);
     }
 
@@ -146,22 +140,22 @@ export default function SignupPage() {
             </div>
           </div>
 
-          {/* Care settings selector */}
+          {/* Care setting selector — single choice */}
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-3">
-              Care Settings You Operate <span className="text-red-500">*</span>
+            <label className="block text-sm font-semibold text-slate-700 mb-1">
+              Care Setting <span className="text-red-500">*</span>
             </label>
             <p className="text-xs text-slate-400 mb-3">
-              Only the dashboards you select will appear in your account.
+              Select the type of care your agency provides.
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {CARE_SETTING_OPTIONS.map((opt) => {
-                const selected = selectedSettings.includes(opt.id);
+                const selected = selectedSetting === opt.id;
                 return (
                   <button
                     key={opt.id}
                     type="button"
-                    onClick={() => toggleSetting(opt.id)}
+                    onClick={() => setSelectedSetting(opt.id)}
                     className={`rounded-xl border-2 p-3 text-left transition-all ${
                       selected
                         ? "border-blue-500 bg-blue-50"
@@ -169,11 +163,13 @@ export default function SignupPage() {
                     }`}
                   >
                     <div className="flex items-center gap-2 mb-1">
+                      <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${selected ? "border-blue-500 bg-blue-500" : "border-slate-300"}`}>
+                        {selected && <div className="w-2 h-2 rounded-full bg-white" />}
+                      </div>
                       <span className="text-xl">{opt.icon}</span>
                       <span className={`text-sm font-bold ${selected ? "text-blue-700" : "text-slate-700"}`}>
                         {opt.label}
                       </span>
-                      {selected && <span className="ml-auto text-blue-500 text-sm">✓</span>}
                     </div>
                     <p className="text-xs text-slate-400 pl-7">{opt.desc}</p>
                   </button>
@@ -184,7 +180,7 @@ export default function SignupPage() {
 
           <button
             type="submit"
-            disabled={loading || selectedSettings.length === 0}
+            disabled={loading || !selectedSetting}
             className="w-full rounded-xl bg-blue-600 py-3 font-bold text-white hover:bg-blue-700 disabled:opacity-60 transition-colors"
           >
             {loading ? "Creating your account…" : "Create Account"}
