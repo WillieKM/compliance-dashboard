@@ -24,14 +24,15 @@ export default function BillingPage() {
       .catch(() => {});
   }, []);
 
-  async function subscribe(priceId: string, label: string) {
-    setLoading(priceId);
+  async function subscribe(settingId: string, tier: string) {
+    const key = `${settingId}_${tier}`;
+    setLoading(key);
     setError(null);
     try {
       const res = await fetch("/api/stripe/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ priceId }),
+        body: JSON.stringify({ settingId, tier }),
       });
       const data = await res.json();
       if (data.error) { setError(data.error); setLoading(null); return; }
@@ -91,12 +92,12 @@ export default function BillingPage() {
                 ))}
               </ul>
               <button
-                onClick={() => subscribe(plan.starter.priceId, `${plan.label} Starter`)}
+                onClick={() => subscribe(plan.id, "starter")}
                 disabled={loading !== null}
                 className="w-full rounded-xl py-2.5 font-bold text-sm border-2 transition-all disabled:opacity-60 hover:opacity-90"
                 style={{ borderColor: plan.color, color: plan.color }}
               >
-                {loading === plan.starter.priceId ? "Redirecting…" : "Subscribe — $49/mo"}
+                {loading === `${plan.id}_starter` ? "Redirecting…" : "Subscribe — $49/mo"}
               </button>
             </div>
 
@@ -122,12 +123,12 @@ export default function BillingPage() {
                 ))}
               </ul>
               <button
-                onClick={() => subscribe(plan.pro.priceId, `${plan.label} Pro`)}
+                onClick={() => subscribe(plan.id, "pro")}
                 disabled={loading !== null}
                 className="w-full rounded-xl py-2.5 font-bold text-sm text-white transition-all disabled:opacity-60 hover:opacity-90"
                 style={{ backgroundColor: plan.color }}
               >
-                {loading === plan.pro.priceId ? "Redirecting…" : "Subscribe — $89/mo"}
+                {loading === `${plan.id}_pro` ? "Redirecting…" : "Subscribe — $89/mo"}
               </button>
             </div>
           </div>

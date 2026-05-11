@@ -1,19 +1,26 @@
 import { NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
 
+// Server-side price ID map — env vars never exposed to client
+const PRICE_MAP: Record<string, string | undefined> = {
+  "HOME_CARE_starter":       process.env.STRIPE_PRICE_HOME_CARE_STARTER,
+  "HOME_CARE_pro":           process.env.STRIPE_PRICE_HOME_CARE_PRO,
+  "AFH_starter":             process.env.STRIPE_PRICE_AFH_STARTER,
+  "AFH_pro":                 process.env.STRIPE_PRICE_AFH_PRO,
+  "ASSISTED_LIVING_starter": process.env.STRIPE_PRICE_AL_STARTER,
+  "ASSISTED_LIVING_pro":     process.env.STRIPE_PRICE_AL_PRO,
+  "MULTI_SERVICE_starter":   process.env.STRIPE_PRICE_MS_STARTER,
+  "MULTI_SERVICE_pro":       process.env.STRIPE_PRICE_MS_PRO,
+};
+
 export async function POST(request: Request) {
-  const { priceId, planId } = await request.json();
+  const { settingId, tier } = await request.json();
 
-  // Support both direct priceId and legacy planId
-  const finalPriceId = priceId || planId;
+  const finalPriceId = PRICE_MAP[`${settingId}_${tier}`];
 
-  if (!finalPriceId) {
-    return NextResponse.json({ error: "Price ID required" }, { status: 400 });
-  }
-
-  if (finalPriceId.startsWith("price_placeholder") || !finalPriceId.startsWith("price_")) {
+  if (!finalPriceId || !finalPriceId.startsWith("price_")) {
     return NextResponse.json(
-      { error: "Payment not configured yet. Add Stripe price IDs to environment variables." },
+      { error: `Plan not configured. Add STRIPE_PRICE_${settingId}_${tier?.toUpperCase()} to Vercel environment variables.` },
       { status: 500 }
     );
   }
