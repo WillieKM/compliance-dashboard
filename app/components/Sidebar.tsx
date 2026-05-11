@@ -17,7 +17,8 @@ const navItems = [
   { label: "Alerts",     href: "/alerts" },
   { label: "Checklist",  href: "/checklist" },
   { label: "Billing",    href: "/billing" },
-  { label: "⚙ Branding", href: "/settings/branding" },
+  { label: "⚙ Branding",      href: "/settings/branding" },
+  { label: "🔑 Invite Codes", href: "/admin/invites" },
 ];
 
 export default async function Sidebar() {

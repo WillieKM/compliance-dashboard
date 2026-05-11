@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
 const CARE_SETTING_OPTIONS = [
@@ -12,10 +13,40 @@ const CARE_SETTING_OPTIONS = [
 ];
 
 export default function SignupPage() {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [done, setDone] = useState(false);
+  const searchParams = useSearchParams();
+  const [loading, setLoading]               = useState(false);
+  const [error, setError]                   = useState<string | null>(null);
+  const [done, setDone]                     = useState(false);
   const [selectedSetting, setSelectedSetting] = useState<string>("HOME_CARE");
+  const [inviteCode, setInviteCode]         = useState(searchParams.get("code") ?? "");
+  const [codeValid, setCodeValid]           = useState<boolean | null>(null);
+  const [codeChecking, setCodeChecking]     = useState(false);
+  const [prefilledCompany, setPrefilledCompany] = useState("");
+
+  async function validateCode(code: string) {
+    if (!code.trim()) { setCodeValid(null); return; }
+    setCodeChecking(true);
+    const { data } = await supabase
+      .from("invite_codes")
+      .select("id, created_for, care_setting, used, expires_at")
+      .eq("code", code.toUpperCase().trim())
+      .maybeSingle();
+    if (!data || data.used || (data.expires_at && new Date(data.expires_at) < new Date())) {
+      setCodeValid(false);
+    } else {
+      setCodeValid(true);
+      if (data.created_for)  setPrefilledCompany(data.created_for);
+      if (data.care_setting) setSelectedSetting(data.care_setting);
+    }
+    setCodeChecking(false);
+  }
+
+  // Auto-validate code from URL param on load
+  useEffect(() => {
+    const code = searchParams.get("code");
+    if (code) validateCode(code);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function handleSignup(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -23,6 +54,34 @@ export default function SignupPage() {
 
     if (!selectedSetting) {
       setError("Please select your care setting.");
+      return;
+    }
+
+    // Validate invite code
+    if (!inviteCode.trim()) {
+      setError("An invite code is required to sign up.");
+      setLoading(false);
+      return;
+    }
+    const { data: codeRow } = await supabase
+      .from("invite_codes")
+      .select("id, used, expires_at")
+      .eq("code", inviteCode.toUpperCase().trim())
+      .maybeSingle();
+
+    if (!codeRow) {
+      setError("Invalid invite code. Please check with your administrator.");
+      setLoading(false);
+      return;
+    }
+    if (codeRow.used) {
+      setError("This invite code has already been used.");
+      setLoading(false);
+      return;
+    }
+    if (codeRow.expires_at && new Date(codeRow.expires_at) < new Date()) {
+      setError("This invite code has expired. Please request a new one.");
+      setLoading(false);
       return;
     }
 
@@ -70,6 +129,13 @@ export default function SignupPage() {
         .eq("id", profileData.organization_id);
     }
 
+    // Mark invite code as used via service API
+    await fetch("/api/admin/invites/use", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code: inviteCode.toUpperCase().trim(), usedBy: email }),
+    });
+
     setDone(true);
     setLoading(false);
   }
@@ -105,6 +171,32 @@ export default function SignupPage() {
             <div className="rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-700">{error}</div>
           )}
 
+          {/* Invite code — first field */}
+          <div className={`rounded-xl border-2 p-4 ${codeValid === true ? "border-emerald-400 bg-emerald-50" : codeValid === false ? "border-red-300 bg-red-50" : "border-slate-200 bg-slate-50"}`}>
+            <label className="block text-sm font-bold text-slate-800 mb-1.5">
+              🔑 Invite Code <span className="text-red-500">*</span>
+            </label>
+            <p className="text-xs text-slate-500 mb-3">Required — get this from your administrator</p>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={inviteCode}
+                onChange={e => { setInviteCode(e.target.value.toUpperCase()); setCodeValid(null); }}
+                onBlur={e => validateCode(e.target.value)}
+                placeholder="e.g. ABCD1234"
+                maxLength={8}
+                className="flex-1 rounded-lg border border-slate-300 px-3 py-2.5 text-slate-900 font-mono font-bold text-center text-lg tracking-widest uppercase focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <button type="button" onClick={() => validateCode(inviteCode)}
+                disabled={codeChecking || !inviteCode}
+                className="px-4 rounded-lg bg-blue-600 text-white text-sm font-bold hover:bg-blue-700 disabled:opacity-50">
+                {codeChecking ? "…" : "Check"}
+              </button>
+            </div>
+            {codeValid === true && <p className="text-emerald-700 text-xs font-semibold mt-2">✓ Valid code{prefilledCompany ? ` — prepared for ${prefilledCompany}` : ""}</p>}
+            {codeValid === false && <p className="text-red-600 text-xs font-semibold mt-2">✕ Invalid, used, or expired code</p>}
+          </div>
+
           {/* Basic info */}
           <div className="space-y-4">
             <div>
@@ -112,6 +204,8 @@ export default function SignupPage() {
                 Company / Agency Name <span className="text-red-500">*</span>
               </label>
               <input type="text" name="company_name" required placeholder="e.g. Benmarr Home Care"
+                defaultValue={prefilledCompany}
+                key={prefilledCompany}
                 className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500" />
               <p className="mt-1 text-xs text-slate-400">Appears on your dashboard and reports.</p>
             </div>
@@ -180,7 +274,7 @@ export default function SignupPage() {
 
           <button
             type="submit"
-            disabled={loading || !selectedSetting}
+            disabled={loading || !selectedSetting || codeValid !== true}
             className="w-full rounded-xl bg-blue-600 py-3 font-bold text-white hover:bg-blue-700 disabled:opacity-60 transition-colors"
           >
             {loading ? "Creating your account…" : "Create Account"}
