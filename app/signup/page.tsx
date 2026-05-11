@@ -99,20 +99,26 @@ function SignupForm() {
       return;
     }
 
-    // 1 — Create auth user
-    const { error: signUpError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { company_name: companyName, full_name: fullName || email },
-        emailRedirectTo: `${window.location.origin}/dashboard`,
-      },
-    });
+    // 1 — Create auth user (with 15s timeout to prevent hanging)
+    const timeout = new Promise<{ error: { message: string } }>(res =>
+      setTimeout(() => res({ error: { message: "Request timed out. Please try again." } }), 15000)
+    );
+
+    const { error: signUpError } = await Promise.race([
+      supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { company_name: companyName, full_name: fullName || email },
+          emailRedirectTo: `${window.location.origin}/dashboard`,
+        },
+      }),
+      timeout,
+    ]);
 
     if (signUpError) {
-      // Supabase returns "User already registered" if email exists
       setError(signUpError.message.includes("already")
-        ? "This email is already registered. Please use a different email or log in."
+        ? "This email is already registered. Please use a different email."
         : signUpError.message);
       setLoading(false);
       return;
