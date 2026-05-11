@@ -1,11 +1,28 @@
 "use client";
 
-import { useState } from "react";
-import { ALL_CARE_PLANS } from "@/lib/stripe";
+import { useState, useEffect } from "react";
+import { ALL_CARE_PLANS, CARE_SETTING_PLANS, type CarePlanId } from "@/lib/stripe";
 
 export default function BillingPage() {
-  const [loading, setLoading] = useState<string | null>(null);
-  const [error, setError]     = useState<string | null>(null);
+  const [loading, setLoading]       = useState<string | null>(null);
+  const [error, setError]           = useState<string | null>(null);
+  const [orgName, setOrgName]       = useState<string>("");
+  const [plans, setPlans]           = useState(ALL_CARE_PLANS);
+
+  useEffect(() => {
+    fetch("/api/org/me")
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (!data?.org) return;
+        setOrgName(data.org.name ?? "");
+        const settings: CarePlanId[] = data.org.care_settings ?? [];
+        if (settings.length > 0) {
+          const filtered = ALL_CARE_PLANS.filter(p => settings.includes(p.id));
+          setPlans(filtered.length > 0 ? filtered : ALL_CARE_PLANS);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   async function subscribe(priceId: string, label: string) {
     setLoading(priceId);
@@ -30,8 +47,11 @@ export default function BillingPage() {
       <div>
         <h1 className="text-3xl font-bold text-slate-900">Billing & Plans</h1>
         <p className="text-slate-500 mt-2">
-          Subscribe to the care setting your agency operates. Each setting is priced separately.
-          Cancel or upgrade anytime.
+          {orgName ? (
+            <>Plans available for <strong>{orgName}</strong>. Cancel or upgrade anytime.</>
+          ) : (
+            <>Subscribe to activate your compliance dashboard. Cancel or upgrade anytime.</>
+          )}
         </p>
       </div>
 
@@ -41,7 +61,7 @@ export default function BillingPage() {
         </div>
       )}
 
-      {ALL_CARE_PLANS.map((plan) => (
+      {plans.map((plan) => (
         <div key={plan.id} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
           {/* Plan header */}
           <div className="px-6 py-4 flex items-center gap-3" style={{ backgroundColor: plan.color }}>
