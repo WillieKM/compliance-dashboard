@@ -31,47 +31,40 @@ export default function BrandingPage() {
 
   useEffect(() => {
     async function load() {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("organization_id, facility_id, organizations(id, name, slug, primary_color, logo_url, tagline)")
-        .maybeSingle();
-
-      if (profile?.organizations) {
-        const org = profile.organizations as unknown as Record<string, string>;
-        setOrgId(org.id);
+      // Use API route (service role) to bypass RLS
+      const res = await fetch("/api/org/me").catch(() => null);
+      if (!res?.ok) return;
+      const { org, facilityId: fid, organizationId } = await res.json();
+      if (org) {
+        setOrgId(organizationId);
         setOrgName(org.name ?? "");
         setSlug(org.slug ?? "");
         setTagline(org.tagline ?? "");
         setPrimaryColor(org.primary_color ?? "#1a3a52");
         setLogoUrl(org.logo_url ?? null);
-        const settings: string[] = (org.care_settings as unknown as string[]) ?? [];
+        const settings: string[] = org.care_settings ?? [];
         setCareSetting(settings[0] ?? "HOME_CARE");
       }
-      setFacilityId(profile?.facility_id ?? null);
+      setFacilityId(fid ?? null);
     }
     load();
   }, []);
 
   async function uploadLogo(file: File) {
-    if (!facilityId) return;
     setUploading(true);
     setError(null);
 
-    const ext = file.name.split(".").pop();
-    const path = `logos/${facilityId}/logo.${ext}`;
+    const fd = new FormData();
+    fd.append("file", file);
 
-    const { error: upErr } = await supabase.storage
-      .from("logos")
-      .upload(path, file, { upsert: true });
+    const res = await fetch("/api/org/logo", { method: "POST", body: fd });
+    const data = await res.json();
 
-    if (upErr) {
-      setError(`Logo upload failed: ${upErr.message}`);
-      setUploading(false);
-      return;
+    if (data.error) {
+      setError(`Logo upload failed: ${data.error}`);
+    } else {
+      setLogoUrl(data.url);
     }
-
-    const { data } = supabase.storage.from("logos").getPublicUrl(path);
-    setLogoUrl(data.publicUrl);
     setUploading(false);
   }
 
