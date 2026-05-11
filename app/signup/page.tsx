@@ -110,7 +110,10 @@ function SignupForm() {
     });
 
     if (signUpError) {
-      setError(signUpError.message);
+      // Supabase returns "User already registered" if email exists
+      setError(signUpError.message.includes("already")
+        ? "This email is already registered. Please use a different email or log in."
+        : signUpError.message);
       setLoading(false);
       return;
     }
@@ -130,12 +133,12 @@ function SignupForm() {
         .eq("id", profileData.organization_id);
     }
 
-    // Mark invite code as used via service API
-    await fetch("/api/admin/invites/use", {
+    // Mark invite code as used — fire and forget, don't block on it
+    fetch("/api/admin/invites/use", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ code: inviteCode.toUpperCase().trim(), usedBy: email }),
-    });
+    }).catch(() => {});
 
     setDone(true);
     setLoading(false);
