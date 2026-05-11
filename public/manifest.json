@@ -1,0 +1,36 @@
+{
+  "name": "CareCompliance",
+  "short_name": "CareCompliance",
+  "description": "Washington State care compliance dashboard",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#f9fafb",
+  "theme_color": "#1a3a52",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Clock In",
+      "url": "/dashboard/home-care/visits/clock-in",
+      "description": "Caregiver clock in"
+    },
+    {
+      "name": "Submit Notes",
+      "url": "/dashboard/home-care/visits/notes",
+      "description": "Submit caregiver notes"
+    }
+  ]
+}

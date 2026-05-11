@@ -93,15 +93,31 @@ export async function GET(request: Request) {
         const transport = mailer();
         if (transport) {
           try {
+            const urgency = diff <= 7 ? "🔴 URGENT" : diff <= 14 ? "🟡 ACTION NEEDED" : "📋 REMINDER";
             await transport.sendMail({
               from: `"CareCompliance" <${process.env.GMAIL_USER}>`,
               to: staffMember.email,
-              subject: `Action Required: ${doc.file_name} expires in ${diff} days`,
+              subject: `${urgency}: ${doc.file_name} expires in ${diff} days`,
               html: `
-                <p>Hi ${staffMember.first_name},</p>
-                <p>This is a reminder that your <strong>${doc.file_name}</strong> expires on <strong>${doc.expiration_date}</strong> (${diff} days from today).</p>
-                <p>Please renew it and upload the updated document to your compliance portal as soon as possible.</p>
-                <p style="margin-top:24px;color:#6b7280;font-size:12px">CareCompliance — automated reminder</p>
+                <div style="font-family:sans-serif;max-width:500px;margin:0 auto">
+                  <div style="background:#1a3a52;color:white;padding:20px;border-radius:8px 8px 0 0">
+                    <h2 style="margin:0">CareCompliance</h2>
+                    <p style="margin:4px 0 0;opacity:0.75;font-size:13px">Certification Expiry Alert</p>
+                  </div>
+                  <div style="background:white;padding:24px;border:1px solid #e2e8f0;border-radius:0 0 8px 8px">
+                    <p style="font-size:16px">Hi <strong>${staffMember.first_name}</strong>,</p>
+                    <div style="background:${diff <= 7 ? "#fef2f2" : diff <= 14 ? "#fffbeb" : "#eff6ff"};border-left:4px solid ${diff <= 7 ? "#ef4444" : diff <= 14 ? "#f59e0b" : "#3b82f6"};padding:12px 16px;margin:16px 0;border-radius:4px">
+                      <p style="margin:0;font-weight:bold">${doc.file_name}</p>
+                      <p style="margin:4px 0 0;font-size:14px">Expires: <strong>${doc.expiration_date}</strong> (${diff} days from today)</p>
+                    </div>
+                    <p>Please renew this document and upload it to your compliance portal before it expires to maintain your compliance status.</p>
+                    <a href="${process.env.NEXT_PUBLIC_APP_URL}/documents/new?owner_type=staff"
+                       style="display:inline-block;background:#1a3a52;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;margin-top:8px">
+                      Upload Renewed Document →
+                    </a>
+                    <p style="margin-top:24px;color:#6b7280;font-size:12px">CareCompliance — automated reminder. If you have questions, contact your agency administrator.</p>
+                  </div>
+                </div>
               `,
             });
             emailsSent++;

@@ -21,9 +21,30 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
   const facilityId = org.id;
   const { action } = body;
 
+  // ── Geo-fence helper ──────────────────────────────────────────────
+  function distanceMiles(lat1: number, lng1: number, lat2: number, lng2: number) {
+    const R = 3958.8;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLng = (lng2 - lng1) * Math.PI / 180;
+    const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLng/2)**2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  }
+
   // ── Clock In ──────────────────────────────────────────────────────
   if (action === "clock_in") {
     const { caregiverName, clientName, staffId, residentId, lat, lng } = body;
+
+    // Geo-fence: check if caregiver is within 0.5 miles of client's address (if resident has coordinates)
+    let geoWarning = null;
+    if (lat && lng && residentId) {
+      const { data: resident } = await db.from("residents")
+        .select("lat, lng").eq("id", residentId).maybeSingle();
+      if (resident?.lat && resident?.lng) {
+        const miles = distanceMiles(lat, lng, resident.lat, resident.lng);
+        if (miles > 0.5) geoWarning = `Caregiver is ${miles.toFixed(1)} miles from client address`;
+      }
+    }
+
     const { data: visit, error } = await db.from("care_visits").insert({
       facility_id: facilityId,
       staff_id: staffId || null,
@@ -35,9 +56,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
       clock_in_lat: lat ?? null,
       clock_in_lng: lng ?? null,
       status: "active",
+      notes: geoWarning ? `[GEO WARNING] ${geoWarning}` : null,
     }).select().single();
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    return NextResponse.json({ visitId: visit.id });
+    return NextResponse.json({ visitId: visit.id, geoWarning });
   }
 
   // ── Clock Out ─────────────────────────────────────────────────────

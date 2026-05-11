@@ -4,7 +4,10 @@ import ConditionalSidebar from "./components/ConditionalSidebar";
 
 export const metadata = {
   title: "CareCompliance",
-  description: "Compliance dashboard platform",
+  description: "Washington State care compliance dashboard",
+  manifest: "/manifest.json",
+  appleWebApp: { capable: true, statusBarStyle: "default", title: "CareCompliance" },
+  other: { "mobile-web-app-capable": "yes" },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

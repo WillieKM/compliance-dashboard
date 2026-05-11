@@ -66,11 +66,9 @@ export default async function ReportsPage() {
           <p className="text-slate-500 text-sm mt-0.5">WAC 246-335 · Generated {reportDate}</p>
         </div>
         <button
-          onClick={undefined}
+          onClick={() => window.print()}
           className="px-4 py-2 rounded-lg text-white text-sm font-bold hover:opacity-90 print:hidden"
           style={{ backgroundColor: WA_COLORS.navy }}
-          // Use browser print
-          {...{ onClick: "window.print()" } as object}
         >
           🖨 Print / Save PDF
         </button>
