@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getCurrentProfile, getOrgColor } from "@/lib/auth/getCurrentProfile";
+import LogoutButton from "./LogoutButton";
 
 const ALL_DASHBOARDS = [
   { id: "HOME_CARE",       label: "🏥 Home Care",        href: "/dashboard/home-care",       complianceHref: "/dashboard/home-care/compliance",       visitsHref: "/dashboard/home-care/visits" },
@@ -145,6 +146,12 @@ export default async function Sidebar() {
             </>
           )}
         </div>
+      </div>
+
+      {/* Sign out */}
+      <div className="border-t border-slate-100 pt-3 mt-3">
+        <div className="px-1 text-xs text-slate-400 mb-1 truncate">{profile?.full_name ?? ""}</div>
+        <LogoutButton />
       </div>
     </aside>
   );
