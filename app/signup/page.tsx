@@ -118,27 +118,28 @@ function SignupForm() {
       return;
     }
 
-    // 2 — Wait briefly for the trigger to create the org, then save care_settings
-    await new Promise((r) => setTimeout(r, 1500));
+    // 2 — Fire all post-signup work in background, never block the UI
+    setTimeout(async () => {
+      try {
+        const { data: profileData } = await supabase
+          .from("profiles")
+          .select("organization_id")
+          .maybeSingle();
 
-    const { data: profileData } = await supabase
-      .from("profiles")
-      .select("organization_id")
-      .maybeSingle();
+        if (profileData?.organization_id) {
+          await supabase
+            .from("organizations")
+            .update({ care_settings: [selectedSetting] })
+            .eq("id", profileData.organization_id);
+        }
+      } catch {}
 
-    if (profileData?.organization_id) {
-      await supabase
-        .from("organizations")
-        .update({ care_settings: [selectedSetting] })
-        .eq("id", profileData.organization_id);
-    }
-
-    // Mark invite code as used — fire and forget, don't block on it
-    fetch("/api/admin/invites/use", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code: inviteCode.toUpperCase().trim(), usedBy: email }),
-    }).catch(() => {});
+      fetch("/api/admin/invites/use", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: inviteCode.toUpperCase().trim(), usedBy: email }),
+      }).catch(() => {});
+    }, 2000);
 
     setDone(true);
     setLoading(false);
