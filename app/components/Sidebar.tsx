@@ -86,16 +86,15 @@ export default async function Sidebar() {
               {item.label}
             </Link>
           ))}
-          {/* Only super admin sees Branding and Invite Codes */}
+          {/* Branding for all users */}
+          <Link href="/settings/branding" className="block rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-slate-50 hover:text-slate-900 transition-colors">
+            ⚙ Branding
+          </Link>
+          {/* Invite Codes — super admin only */}
           {isSuperAdmin && (
-            <>
-              <Link href="/settings/branding" className="block rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-slate-50 hover:text-slate-900 transition-colors">
-                ⚙ Branding
-              </Link>
-              <Link href="/admin/invites" className="block rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-slate-50 hover:text-slate-900 transition-colors">
-                🔑 Invite Codes
-              </Link>
-            </>
+            <Link href="/admin/invites" className="block rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-slate-50 hover:text-slate-900 transition-colors">
+              🔑 Invite Codes
+            </Link>
           )}
         </nav>
       </div>
