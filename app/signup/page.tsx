@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
 const CARE_SETTING_OPTIONS = [
@@ -13,12 +12,11 @@ const CARE_SETTING_OPTIONS = [
 ];
 
 function SignupForm() {
-  const searchParams = useSearchParams();
   const [loading, setLoading]               = useState(false);
   const [error, setError]                   = useState<string | null>(null);
   const [done, setDone]                     = useState(false);
   const [selectedSetting, setSelectedSetting] = useState<string>("HOME_CARE");
-  const [inviteCode, setInviteCode]         = useState(searchParams.get("code") ?? "");
+  const [inviteCode, setInviteCode]         = useState("");
   const [codeValid, setCodeValid]           = useState<boolean | null>(null);
   const [codeChecking, setCodeChecking]     = useState(false);
   const [prefilledCompany, setPrefilledCompany] = useState("");
@@ -41,10 +39,13 @@ function SignupForm() {
     setCodeChecking(false);
   }
 
-  // Auto-validate code from URL param on load
+  // Read invite code from URL after mount (avoids useSearchParams Suspense requirement)
   useEffect(() => {
-    const code = searchParams.get("code");
-    if (code) validateCode(code);
+    const code = new URLSearchParams(window.location.search).get("code");
+    if (code) {
+      setInviteCode(code);
+      validateCode(code);
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -291,13 +292,5 @@ function SignupForm() {
 }
 
 export default function SignupPage() {
-  return (
-    <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-slate-50">
-        <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
-      </div>
-    }>
-      <SignupForm />
-    </Suspense>
-  );
+  return <SignupForm />;
 }
