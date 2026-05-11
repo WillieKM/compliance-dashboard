@@ -77,21 +77,24 @@ export default function BrandingPage() {
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
-    if (!orgId) return;
     setSaving(true);
     setError(null);
 
-    const { error: saveErr } = await supabase
-      .from("organizations")
-      .update({
+    const res = await fetch("/api/org/branding", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
         name: orgName,
-        slug: slug.toLowerCase().replace(/[^a-z0-9-]/g, "-"),
+        slug,
         tagline,
-        primary_color: primaryColor,
-        logo_url: logoUrl,
-        care_settings: [careSetting],
-      })
-      .eq("id", orgId);
+        primaryColor,
+        logoUrl,
+        careSetting,
+      }),
+    });
+
+    const result = await res.json();
+    const saveErr = result.error ? { message: result.error } : null;
 
     if (saveErr) {
       setError(saveErr.message);
