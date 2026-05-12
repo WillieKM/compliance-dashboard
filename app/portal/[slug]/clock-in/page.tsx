@@ -69,7 +69,7 @@ export default function BrandedClockInPage() {
   }
 
   async function handleClockIn() {
-    if (!caregiverName || !clientName) { setError("Your name is required."); return; }
+    if (!caregiverName) { setError("Your name is required."); return; }
     setLoading(true); setError(null);
     const data = await api({ action: "clock_in", caregiverName, clientName, staffId: staffId||null, residentId: residentId||null, lat: coords?.lat??null, lng: coords?.lng??null });
     if (data.error) { setError(data.error); setLoading(false); return; }
