@@ -11,8 +11,50 @@ export default function ResetPasswordPage() {
   const [confirm, setConfirm]   = useState("");
   const [loading, setLoading]   = useState(false);
   const [error, setError]       = useState<string | null>(null);
-  const [ready]                 = useState(true); // show form immediately
+  const [ready, setReady]       = useState(false);
   const [success, setSuccess]   = useState(false);
+
+  useEffect(() => {
+    async function handleRecovery() {
+      // The reset link contains tokens in the URL hash: #access_token=...&type=recovery
+      const hash = window.location.hash;
+
+      if (!hash) {
+        // No hash — maybe already have a session (e.g. page refresh)
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) { setReady(true); return; }
+        setError("No reset token found. Please request a new reset link.");
+        return;
+      }
+
+      const params = new URLSearchParams(hash.replace("#", ""));
+      const accessToken  = params.get("access_token");
+      const refreshToken = params.get("refresh_token") ?? "";
+      const type         = params.get("type");
+
+      if (type !== "recovery" || !accessToken) {
+        setError("Invalid reset link. Please request a new one.");
+        return;
+      }
+
+      // Exchange the token for an active session
+      const { error: sessionError } = await supabase.auth.setSession({
+        access_token:  accessToken,
+        refresh_token: refreshToken,
+      });
+
+      if (sessionError) {
+        setError("Reset link has expired. Please request a new one.");
+        return;
+      }
+
+      // Clear the hash from the URL so it can't be reused accidentally
+      window.history.replaceState(null, "", window.location.pathname);
+      setReady(true);
+    }
+
+    handleRecovery();
+  }, []);
 
   async function handleReset(e: React.FormEvent) {
     e.preventDefault();
@@ -39,7 +81,7 @@ export default function ResetPasswordPage() {
       <div className="max-w-md w-full text-center bg-white rounded-2xl shadow border border-slate-100 p-10">
         <div className="text-5xl mb-4">✅</div>
         <h2 className="text-2xl font-bold text-slate-900 mb-2">Password updated!</h2>
-        <p className="text-slate-500">Redirecting you to the dashboard…</p>
+        <p className="text-slate-500">Redirecting to your dashboard…</p>
       </div>
     </div>
   );
@@ -47,14 +89,22 @@ export default function ResetPasswordPage() {
   if (!ready) return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-slate-50 flex items-center justify-center px-4">
       <div className="max-w-md w-full text-center bg-white rounded-2xl shadow border border-slate-100 p-10">
-        <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-        <p className="text-slate-500">Verifying your reset link…</p>
-        <p className="text-xs text-slate-400 mt-3">
-          Taking too long?{" "}
-          <Link href="/forgot-password" className="text-blue-600 hover:underline font-medium">
-            Request a new reset link
-          </Link>
-        </p>
+        {error ? (
+          <>
+            <div className="text-4xl mb-4">🔗</div>
+            <h2 className="text-xl font-bold text-slate-900 mb-2">Reset link invalid</h2>
+            <p className="text-red-600 text-sm mb-6">{error}</p>
+            <Link href="/forgot-password"
+              className="inline-block bg-blue-600 text-white font-bold px-6 py-3 rounded-xl hover:bg-blue-700 transition-colors">
+              Request a New Reset Link →
+            </Link>
+          </>
+        ) : (
+          <>
+            <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+            <p className="text-slate-500">Verifying reset link…</p>
+          </>
+        )}
       </div>
     </div>
   );
