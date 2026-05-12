@@ -91,8 +91,8 @@ export default function ClockInPage() {
   }
 
   async function handleClockIn() {
-    if (!caregiverName || !clientName) {
-      setError("Caregiver name and client name are required.");
+    if (!caregiverName) {
+      setError("Caregiver name is required.");
       return;
     }
     setLoading(true);
@@ -218,7 +218,7 @@ export default function ClockInPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Client Name *</label>
+            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Client Name (optional)</label>
             {residents.length > 0 ? (
               <select value={residentId} onChange={(e) => {
                 setResidentId(e.target.value);
@@ -258,7 +258,7 @@ export default function ClockInPage() {
 
         <button
           onClick={handleClockIn}
-          disabled={loading || !caregiverName || !clientName}
+          disabled={loading || !caregiverName}
           className="w-full rounded-2xl py-4 text-lg font-bold hover:opacity-90 disabled:opacity-50 transition-opacity shadow-lg"
           style={{ backgroundColor: navy, color: "white" }}
         >

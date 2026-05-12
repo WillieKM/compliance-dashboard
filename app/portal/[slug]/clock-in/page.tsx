@@ -69,7 +69,7 @@ export default function BrandedClockInPage() {
   }
 
   async function handleClockIn() {
-    if (!caregiverName || !clientName) { setError("Your name and client name are required."); return; }
+    if (!caregiverName || !clientName) { setError("Your name is required."); return; }
     setLoading(true); setError(null);
     const data = await api({ action: "clock_in", caregiverName, clientName, staffId: staffId||null, residentId: residentId||null, lat: coords?.lat??null, lng: coords?.lng??null });
     if (data.error) { setError(data.error); setLoading(false); return; }
@@ -112,7 +112,7 @@ export default function BrandedClockInPage() {
         <div className="bg-white rounded-2xl border border-slate-200 p-10 shadow-sm">
           <p className="text-5xl mb-4">✅</p>
           <h2 className="text-2xl font-bold text-slate-900 mb-2">Visit Complete!</h2>
-          <p className="text-slate-500 mb-6">Report submitted for <strong>{clientName}</strong></p>
+          <p className="text-slate-500 mb-6">Report submitted{clientName ? ` for ${clientName}` : ""}</p>
           <button onClick={resetForm} className="w-full rounded-xl py-3 font-bold text-white hover:opacity-90" style={{ backgroundColor: color }}>Start New Visit</button>
         </div>
       </div>
@@ -125,7 +125,7 @@ export default function BrandedClockInPage() {
         <div className="bg-white rounded-2xl border-2 border-emerald-200 p-6 text-center shadow-sm" style={{ background: "#ecfdf5" }}>
           <p className="text-4xl mb-2">🟢</p>
           <p className="font-bold text-emerald-900 text-xl">Clocked In at {clockInTime}</p>
-          <p className="text-emerald-700 mt-1">{caregiverName} → {clientName}</p>
+          <p className="text-emerald-700 mt-1">{caregiverName}{clientName ? ` → ${clientName}` : ""}</p>
         </div>
         <button onClick={handleClockOut} disabled={loading} className="w-full rounded-2xl py-4 text-lg font-bold text-white hover:opacity-90 disabled:opacity-50 shadow-lg" style={{ backgroundColor: "#dc2626" }}>
           {loading ? "Processing…" : "🔴 Clock Out & Submit Report"}
@@ -180,7 +180,7 @@ export default function BrandedClockInPage() {
               : <input type="text" value={caregiverName} onChange={e=>setCaregiverName(e.target.value)} placeholder="Enter your full name" className={inp} />}
           </div>
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Client Name *</label>
+            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Client Name (optional)</label>
             {residents.length > 0
               ? <select value={residentId} onChange={e=>{setResidentId(e.target.value);const r=residents.find(x=>x.id===e.target.value);if(r)setClientName(`${r.first_name} ${r.last_name}`);}} className={inp}><option value="">— Select client —</option>{residents.map(r=><option key={r.id} value={r.id}>{r.first_name} {r.last_name}</option>)}</select>
               : <input type="text" value={clientName} onChange={e=>setClientName(e.target.value)} placeholder="Client's full name" className={inp} />}
@@ -192,7 +192,7 @@ export default function BrandedClockInPage() {
             {gpsStatus==="denied" && <div className="rounded-xl bg-amber-50 border border-amber-200 p-3 text-sm text-amber-700">⚠ No GPS — visit will be recorded without location</div>}
           </div>
         </div>
-        <button onClick={handleClockIn} disabled={loading||!caregiverName||!clientName} className="w-full rounded-2xl py-4 text-lg font-bold text-white hover:opacity-90 disabled:opacity-50 transition-opacity shadow-lg" style={{ backgroundColor: color }}>
+        <button onClick={handleClockIn} disabled={loading||!caregiverName} className="w-full rounded-2xl py-4 text-lg font-bold text-white hover:opacity-90 disabled:opacity-50 transition-opacity shadow-lg" style={{ backgroundColor: color }}>
           {loading ? "Clocking in…" : "🟢 Clock In"}
         </button>
       </div>
