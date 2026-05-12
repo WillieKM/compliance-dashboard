@@ -174,10 +174,10 @@ export default function BrandedClockInPage() {
         {error && <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-700">{error}</div>}
         <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Your Name *</label>
+            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Staff Member Name *</label>
             {staffList.length > 0
               ? <select value={staffId} onChange={e=>{setStaffId(e.target.value);const s=staffList.find(x=>x.id===e.target.value);if(s)setCaregiverName(`${s.first_name} ${s.last_name}`);}} className={inp}><option value="">— Select your name —</option>{staffList.map(s=><option key={s.id} value={s.id}>{s.first_name} {s.last_name}</option>)}</select>
-              : <input type="text" value={caregiverName} onChange={e=>setCaregiverName(e.target.value)} placeholder="Enter your full name" className={inp} />}
+              : <input type="text" value={caregiverName} onChange={e=>setCaregiverName(e.target.value)} placeholder="Your first and last name" className={inp} />}
           </div>
           <div>
             <label className="block text-sm font-semibold text-slate-700 mb-1.5">Client Name (optional)</label>
