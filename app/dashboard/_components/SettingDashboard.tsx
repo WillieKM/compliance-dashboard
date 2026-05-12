@@ -23,7 +23,9 @@ export default async function SettingDashboard({ setting }: { setting: CareSetti
   }
 
   const facilityId = profile.facility_id;
-  const orgName = profile.organizations?.name ?? "My Organization";
+  const orgName    = profile.organizations?.name ?? "My Organization";
+  const orgSlug    = profile.organizations?.slug ?? null;
+  const appUrl     = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
   const [metrics, alerts, staff, residents] = await Promise.all([
     getDashboardMetrics(facilityId),
@@ -98,51 +100,41 @@ export default async function SettingDashboard({ setting }: { setting: CareSetti
 
       <div className="max-w-7xl mx-auto space-y-8">
 
-        {/* Home Care quick-access cards */}
-        {setting.id === "HOME_CARE" && (
+        {/* Staff Clock In + Notes — shown for all settings when portal slug is configured */}
+        {orgSlug && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Clock In card */}
-            <div className="rounded-2xl border-2 p-5 shadow-sm" style={{ borderColor: "#1a3a52", background: "#f0f7ff" }}>
+            <div className="rounded-2xl border-2 p-5 shadow-sm" style={{ borderColor: setting.headerBg.includes("blue") ? "#1a3a52" : "#374151", background: "#f8faff" }}>
               <div className="flex items-center gap-3 mb-3">
                 <span className="text-3xl">🕐</span>
                 <div>
-                  <h3 className="font-bold text-slate-900">Caregiver Clock In / Out</h3>
-                  <p className="text-xs text-slate-500">Share this link with your caregivers</p>
+                  <h3 className="font-bold text-slate-900">Staff Clock In / Out</h3>
+                  <p className="text-xs text-slate-500">Share this link with your staff</p>
                 </div>
               </div>
-              <div className="bg-white rounded-xl border border-slate-200 px-3 py-2 mb-3 flex items-center justify-between gap-2">
-                <code className="text-xs text-slate-600 truncate">
-                  {process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/dashboard/home-care/visits/clock-in
-                </code>
+              <div className="bg-white rounded-xl border border-slate-200 px-3 py-2 mb-3">
+                <code className="text-xs text-slate-600 truncate block">{appUrl}/portal/{orgSlug}/clock-in</code>
               </div>
-              <Link
-                href="/dashboard/home-care/visits/clock-in"
-                className="flex items-center justify-center gap-2 w-full rounded-xl py-2.5 text-sm font-bold text-white hover:opacity-90 transition-opacity"
-                style={{ backgroundColor: "#1a3a52" }}
-              >
+              <Link href={`/portal/${orgSlug}/clock-in`}
+                className="flex items-center justify-center gap-2 w-full rounded-xl py-2.5 text-sm font-bold text-white hover:opacity-90"
+                style={{ background: setting.headerBg }}>
                 🟢 Open Clock In
               </Link>
             </div>
 
-            {/* Caregiver Notes card */}
             <div className="rounded-2xl border-2 p-5 shadow-sm" style={{ borderColor: "#d97706", background: "#fffbeb" }}>
               <div className="flex items-center gap-3 mb-3">
                 <span className="text-3xl">📝</span>
                 <div>
-                  <h3 className="font-bold text-slate-900">Caregiver Notes</h3>
-                  <p className="text-xs text-slate-500">Share this link with your caregivers</p>
+                  <h3 className="font-bold text-slate-900">Staff Notes</h3>
+                  <p className="text-xs text-slate-500">Share this link with your staff</p>
                 </div>
               </div>
-              <div className="bg-white rounded-xl border border-slate-200 px-3 py-2 mb-3 flex items-center justify-between gap-2">
-                <code className="text-xs text-slate-600 truncate">
-                  {process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/dashboard/home-care/visits/notes
-                </code>
+              <div className="bg-white rounded-xl border border-slate-200 px-3 py-2 mb-3">
+                <code className="text-xs text-slate-600 truncate block">{appUrl}/portal/{orgSlug}/notes</code>
               </div>
-              <Link
-                href="/dashboard/home-care/visits/notes"
-                className="flex items-center justify-center gap-2 w-full rounded-xl py-2.5 text-sm font-bold text-white hover:opacity-90 transition-opacity"
-                style={{ backgroundColor: "#d97706" }}
-              >
+              <Link href={`/portal/${orgSlug}/notes`}
+                className="flex items-center justify-center gap-2 w-full rounded-xl py-2.5 text-sm font-bold text-white hover:opacity-90"
+                style={{ backgroundColor: "#d97706" }}>
                 📝 Open Notes Form
               </Link>
             </div>
