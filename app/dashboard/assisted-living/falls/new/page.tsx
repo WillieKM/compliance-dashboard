@@ -1,0 +1,89 @@
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import { getCurrentProfile } from "@/lib/auth/getCurrentProfile";
+import { createClient } from "@/lib/supabase/server";
+
+export const dynamic = "force-dynamic";
+const purple = "#6d28d9";
+
+export default async function NewFallPage() {
+  const profile = await getCurrentProfile();
+  if (!profile) redirect("/login");
+
+  const supabase = await createClient();
+  const { data: residents } = await supabase.from("residents").select("id, first_name, last_name").eq("facility_id", profile.facility_id).order("first_name");
+
+  async function save(formData: FormData) {
+    "use server";
+    const p = await getCurrentProfile();
+    if (!p) return;
+    const client = await createClient();
+    const resId = String(formData.get("resident_id") || "");
+    const res = residents?.find(r => r.id === resId);
+    await client.from("fall_incidents").insert({
+      facility_id: p.facility_id,
+      resident_id: resId || null,
+      resident_name: String(formData.get("resident_name") || (res ? `${res.first_name} ${res.last_name}` : "")),
+      incident_date: String(formData.get("incident_date") || "") || null,
+      incident_time: String(formData.get("incident_time") || "") || null,
+      location: String(formData.get("location") || "") || null,
+      witnessed: formData.get("witnessed") === "on",
+      injury_sustained: formData.get("injury_sustained") === "on",
+      injury_description: String(formData.get("injury_description") || "") || null,
+      immediate_action: String(formData.get("immediate_action") || "") || null,
+      physician_notified: formData.get("physician_notified") === "on",
+      family_notified: formData.get("family_notified") === "on",
+      doh_report_required: formData.get("doh_report_required") === "on",
+      contributing_factors: String(formData.get("contributing_factors") || "") || null,
+      prevention_plan: String(formData.get("prevention_plan") || "") || null,
+      reported_by: String(formData.get("reported_by") || "") || null,
+      notes: String(formData.get("notes") || "") || null,
+    });
+    redirect("/dashboard/assisted-living/falls");
+  }
+
+  const inp = "w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-500";
+  const chk = "flex items-center gap-3 cursor-pointer p-3 rounded-xl border border-slate-200 hover:bg-slate-50";
+
+  return (
+    <div className="max-w-2xl space-y-6">
+      <div>
+        <Link href="/dashboard/assisted-living/falls" className="text-sm hover:underline" style={{ color: purple }}>← Fall Log</Link>
+        <h1 className="text-2xl font-bold text-slate-900 mt-2">Log Fall Incident</h1>
+        <p className="text-slate-500 text-sm mt-1">WAC 388-78A-2600</p>
+      </div>
+      <form action={save} className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Resident</label>
+            <select name="resident_id" className={inp} defaultValue="">
+              <option value="">— Select —</option>
+              {residents?.map(r => <option key={r.id} value={r.id}>{r.first_name} {r.last_name}</option>)}
+            </select>
+          </div>
+          <div><label className="block text-sm font-semibold text-slate-700 mb-1.5">Resident Name</label><input type="text" name="resident_name" placeholder="Or type manually" className={inp} /></div>
+          <div><label className="block text-sm font-semibold text-slate-700 mb-1.5">Date *</label><input type="date" name="incident_date" required defaultValue={new Date().toISOString().split("T")[0]} className={inp} /></div>
+          <div><label className="block text-sm font-semibold text-slate-700 mb-1.5">Time</label><input type="time" name="incident_time" className={inp} /></div>
+          <div><label className="block text-sm font-semibold text-slate-700 mb-1.5">Location</label><input type="text" name="location" placeholder="e.g. Bathroom, hallway, bedroom" className={inp} /></div>
+          <div><label className="block text-sm font-semibold text-slate-700 mb-1.5">Reported By</label><input type="text" name="reported_by" placeholder="Staff name" className={inp} /></div>
+          <div className="sm:col-span-2"><label className="block text-sm font-semibold text-slate-700 mb-1.5">Immediate Action Taken</label><textarea name="immediate_action" rows={2} placeholder="What was done immediately after the fall?" className={`${inp} resize-none`} /></div>
+          <div className="sm:col-span-2"><label className="block text-sm font-semibold text-slate-700 mb-1.5">Contributing Factors</label><textarea name="contributing_factors" rows={2} placeholder="e.g. Wet floor, improper footwear, medication side effects" className={`${inp} resize-none`} /></div>
+          <div className="sm:col-span-2"><label className="block text-sm font-semibold text-slate-700 mb-1.5">Prevention Plan</label><textarea name="prevention_plan" rows={2} placeholder="Steps to prevent recurrence..." className={`${inp} resize-none`} /></div>
+
+          <div className="sm:col-span-2 space-y-2">
+            <label className={chk}><input type="checkbox" name="witnessed" className="w-5 h-5 accent-purple-600" /><span className="text-sm font-medium text-slate-700">Fall was witnessed by staff</span></label>
+            <label className={chk}><input type="checkbox" name="injury_sustained" className="w-5 h-5 accent-red-600" /><span className="text-sm font-medium text-red-700">Injury was sustained</span></label>
+            <div><input type="text" name="injury_description" placeholder="Describe injury if applicable..." className={inp} /></div>
+            <label className={chk}><input type="checkbox" name="physician_notified" className="w-5 h-5 accent-purple-600" /><span className="text-sm font-medium text-slate-700">Physician notified</span></label>
+            <label className={chk}><input type="checkbox" name="family_notified" className="w-5 h-5 accent-purple-600" /><span className="text-sm font-medium text-slate-700">Family / representative notified</span></label>
+            <label className={`${chk} border-red-200 bg-red-50`}><input type="checkbox" name="doh_report_required" className="w-5 h-5 accent-red-600" /><span className="text-sm font-medium text-red-700">DOH report required (serious injury)</span></label>
+          </div>
+        </div>
+        <div className="flex gap-3 pt-2">
+          <button type="submit" className="px-8 py-3 rounded-xl text-white font-bold hover:opacity-90" style={{ backgroundColor: purple }}>Save Incident</button>
+          <Link href="/dashboard/assisted-living/falls" className="px-6 py-3 rounded-xl border border-slate-300 font-semibold text-slate-700 hover:bg-slate-50">Cancel</Link>
+        </div>
+      </form>
+    </div>
+  );
+}

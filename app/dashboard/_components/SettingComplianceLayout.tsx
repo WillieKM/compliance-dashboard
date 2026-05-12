@@ -20,8 +20,13 @@ const NAV_ITEMS = [
   { key: "clients",     label: "Clients",          icon: "🏠", path: null,        externalHref: "/compliance/clients",   settingOnly: null },
   { key: "complaints",  label: "Complaints",       icon: "📋", path: null,        externalHref: "/compliance/complaints", settingOnly: null },
   { key: "reports",     label: "Reports",          icon: "📄", path: null,        externalHref: "/compliance/reports",   settingOnly: null },
-  { key: "medications", label: "MAR",         icon: "💊", path: null, externalHref: "/dashboard/afh/medications", settingOnly: "afh" as const },
-  { key: "fire-drills", label: "Fire Drills", icon: "🔥", path: null, externalHref: "/dashboard/afh/fire-drills", settingOnly: "afh" as const },
+  { key: "medications",   label: "MAR",         icon: "💊", path: null, externalHref: "/dashboard/afh/medications",                   settingOnly: "afh" as const },
+  { key: "fire-drills",  label: "Fire Drills",  icon: "🔥", path: null, externalHref: "/dashboard/afh/fire-drills",                   settingOnly: "afh" as const },
+  // AL-only tabs
+  { key: "isp",          label: "ISP",          icon: "📋", path: null, externalHref: "/dashboard/assisted-living/isp",               settingOnly: "assisted-living" as const },
+  { key: "assessments",  label: "Assessments",  icon: "🔍", path: null, externalHref: "/dashboard/assisted-living/assessments",       settingOnly: "assisted-living" as const },
+  { key: "rn-delegation",label: "RN Delegation",icon: "👩‍⚕️", path: null, externalHref: "/dashboard/assisted-living/rn-delegation",   settingOnly: "assisted-living" as const },
+  { key: "falls",        label: "Falls Log",    icon: "🛡️", path: null, externalHref: "/dashboard/assisted-living/falls",            settingOnly: "assisted-living" as const },
 ];
 
 export default function SettingComplianceLayout({

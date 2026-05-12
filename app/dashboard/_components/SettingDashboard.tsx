@@ -149,6 +149,27 @@ export default async function SettingDashboard({ setting }: { setting: CareSetti
           </div>
         )}
 
+        {/* Assisted Living quick-access cards */}
+        {setting.id === "ASSISTED_LIVING" && (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            {[
+              { href: "/dashboard/assisted-living/isp",            icon: "📋", label: "ISP Tracking",        sub: "Individual Service Plans", wac: "WAC 388-78A-2170" },
+              { href: "/dashboard/assisted-living/assessments",    icon: "🔍", label: "Resident Assessments", sub: "Required within 14 days",   wac: "WAC 388-78A-2160" },
+              { href: "/dashboard/assisted-living/rn-delegation",  icon: "👩‍⚕️", label: "RN Delegation",      sub: "Medication management",      wac: "WAC 388-78A-2240" },
+              { href: "/dashboard/assisted-living/falls",          icon: "🛡️", label: "Falls Log",            sub: "Incident & prevention",      wac: "WAC 388-78A-2600" },
+            ].map(card => (
+              <Link key={card.href} href={card.href}
+                className="rounded-2xl border-2 p-4 shadow-sm hover:shadow-md transition-all"
+                style={{ borderColor: "#6d28d9", background: "#faf5ff" }}>
+                <span className="text-3xl block mb-2">{card.icon}</span>
+                <h3 className="font-bold text-slate-900 text-sm">{card.label}</h3>
+                <p className="text-xs text-slate-500 mt-0.5">{card.sub}</p>
+                <p className="text-xs mt-1" style={{ color: "#6d28d9" }}>{card.wac} →</p>
+              </Link>
+            ))}
+          </div>
+        )}
+
         {/* AFH quick-access cards */}
         {setting.id === "AFH" && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
