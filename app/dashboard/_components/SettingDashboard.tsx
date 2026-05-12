@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/server";
 import { getDashboardMetrics } from "@/lib/compliance/getDashboardMetrics";
 import { getAlerts } from "@/lib/compliance/getAlerts";
 import { getStaffCompliance } from "@/lib/compliance/getStaffCompliance";
@@ -25,14 +26,22 @@ export default async function SettingDashboard({ setting }: { setting: CareSetti
   const facilityId = profile.facility_id;
   const orgName    = profile.organizations?.name ?? "My Organization";
   const orgSlug    = profile.organizations?.slug ?? null;
+  const supabase   = await createClient();
   const appUrl     = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
-  const [metrics, alerts, staff, residents] = await Promise.all([
+  const [metrics, alerts, staff, residents, activeVisitsRes] = await Promise.all([
     getDashboardMetrics(facilityId),
     getAlerts(facilityId),
     getStaffCompliance(facilityId),
     getResidentSummaries(facilityId),
+    supabase.from("care_visits")
+      .select("id, caregiver_name, client_name, clock_in_time")
+      .eq("facility_id", facilityId)
+      .eq("status", "active")
+      .order("clock_in_time", { ascending: true }),
   ]);
+
+  const activeVisits = activeVisitsRes.data ?? [];
 
   const activeAlerts = alerts.filter((a) => !a.resolved);
   const criticalAlerts = activeAlerts.filter((a) => a.priority === "CRITICAL");
@@ -137,6 +146,41 @@ export default async function SettingDashboard({ setting }: { setting: CareSetti
                 style={{ backgroundColor: "#d97706" }}>
                 📝 Open Notes Form
               </Link>
+            </div>
+          </div>
+        )}
+
+        {/* Live clocked-in widget */}
+        {activeVisits.length > 0 && (
+          <div className="rounded-xl border-2 border-emerald-200 bg-emerald-50 p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+              <h3 className="font-bold text-emerald-900">
+                {activeVisits.length} Staff Currently Clocked In
+              </h3>
+            </div>
+            <div className="space-y-2">
+              {activeVisits.map((v) => {
+                const since = v.clock_in_time
+                  ? new Date(v.clock_in_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                  : "";
+                const elapsed = v.clock_in_time
+                  ? Math.floor((Date.now() - new Date(v.clock_in_time).getTime()) / 60000)
+                  : 0;
+                return (
+                  <div key={v.id} className="flex items-center justify-between bg-white rounded-lg px-3 py-2 border border-emerald-100">
+                    <div className="flex items-center gap-2">
+                      <span className="text-emerald-600">👤</span>
+                      <span className="font-semibold text-slate-900 text-sm">{v.caregiver_name}</span>
+                      {v.client_name && <span className="text-slate-500 text-xs">→ {v.client_name}</span>}
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs text-emerald-700 font-semibold">Since {since}</p>
+                      <p className="text-xs text-slate-400">{elapsed}m on shift</p>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
