@@ -19,6 +19,25 @@ export default async function VisitsPage() {
   const profile = await getCurrentProfile();
   if (!profile) redirect("/login");
 
+  async function forceClockOut(formData: FormData) {
+    "use server";
+    const visitId = String(formData.get("visit_id"));
+    const client = await createClient();
+    const now = new Date().toISOString();
+    const { data: visit } = await client.from("care_visits").select("clock_in_time").eq("id", visitId).single();
+    const mins = visit?.clock_in_time
+      ? Math.round((new Date(now).getTime() - new Date(visit.clock_in_time).getTime()) / 60000)
+      : null;
+    await client.from("care_visits").update({
+      clock_out_time: now,
+      status: "completed",
+      duration_minutes: mins,
+      notes: "Clocked out by admin",
+    }).eq("id", visitId);
+    const { revalidatePath } = await import("next/cache");
+    revalidatePath("/dashboard/home-care/visits");
+  }
+
   const supabase = await createClient();
   const fid = profile.facility_id;
 
@@ -87,14 +106,25 @@ export default async function VisitsPage() {
       {/* Active visits alert */}
       {active > 0 && (
         <div className="rounded-xl border-2 border-blue-200 bg-blue-50 p-4">
-          <p className="font-bold text-blue-900">🟢 {active} caregiver{active > 1 ? "s" : ""} currently clocked in</p>
-          <div className="mt-2 space-y-1">
+          <p className="font-bold text-blue-900 mb-2">🟢 {active} staff currently clocked in</p>
+          <div className="space-y-2">
             {all.filter((v) => v.status === "active").map((v) => (
-              <div key={v.id} className="flex items-center justify-between text-sm text-blue-800">
-                <span>{v.caregiver_name} → {v.client_name}</span>
-                <span className="text-xs text-blue-600">
-                  Since {new Date(v.clock_in_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                </span>
+              <div key={v.id} className="flex items-center justify-between bg-white rounded-lg px-3 py-2 border border-blue-100">
+                <div>
+                  <span className="font-semibold text-slate-900 text-sm">{v.caregiver_name}</span>
+                  {v.client_name && <span className="text-slate-500 text-xs ml-2">→ {v.client_name}</span>}
+                  <p className="text-xs text-blue-600 mt-0.5">
+                    Since {new Date(v.clock_in_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                  </p>
+                </div>
+                <form action={forceClockOut}>
+                  <input type="hidden" name="visit_id" value={v.id} />
+                  <button type="submit"
+                    className="text-xs bg-red-100 text-red-700 hover:bg-red-200 px-3 py-1.5 rounded-lg font-semibold transition-colors"
+                    onClick={(e) => { if (!confirm(`Clock out ${v.caregiver_name}?`)) e.preventDefault(); }}>
+                    🔴 Clock Out
+                  </button>
+                </form>
               </div>
             ))}
           </div>
