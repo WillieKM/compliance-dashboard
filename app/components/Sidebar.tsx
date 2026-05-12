@@ -5,7 +5,7 @@ import LogoutButton from "./LogoutButton";
 const ALL_DASHBOARDS = [
   { id: "HOME_CARE",       label: "🏥 Home Care",        href: "/dashboard/home-care",       complianceHref: "/dashboard/home-care/compliance",       visitsHref: "/dashboard/home-care/visits",   notesHref: "/dashboard/home-care/notes-review" },
   { id: "AFH",             label: "🏠 Adult Family Home", href: "/dashboard/afh",             complianceHref: "/dashboard/afh/compliance",             visitsHref: null,                            notesHref: null },
-  { id: "ASSISTED_LIVING", label: "🏢 Assisted Living",   href: "/dashboard/assisted-living", complianceHref: "/dashboard/assisted-living/compliance", visitsHref: null,                            notesHref: "/dashboard/assisted-living/notes-review" },
+  { id: "ASSISTED_LIVING", label: "🏢 Assisted Living",   href: "/dashboard/assisted-living", complianceHref: "/dashboard/assisted-living/compliance", visitsHref: "/dashboard/assisted-living/visits",     notesHref: "/dashboard/assisted-living/notes-review" },
   { id: "MULTI_SERVICE",   label: "🌐 Multi-Service",     href: "/dashboard/multi-service",   complianceHref: "/dashboard/multi-service/compliance",   visitsHref: null,                            notesHref: null },
 ];
 
