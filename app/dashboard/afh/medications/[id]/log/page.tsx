@@ -13,21 +13,12 @@ export default async function LogAdminPage({ params }: { params: Promise<{ id: s
   if (!profile) redirect("/login");
 
   const supabase = await createClient();
-  const { data: med } = await supabase
-    .from("medication_records")
-    .select("*")
-    .eq("id", id)
-    .eq("facility_id", profile.facility_id)
-    .maybeSingle();
+  const [{ data: med }, { data: logs }] = await Promise.all([
+    supabase.from("medication_records").select("*").eq("id", id).eq("facility_id", profile.facility_id).maybeSingle(),
+    supabase.from("mar_log").select("*").eq("medication_id", id).order("administered_at", { ascending: false }).limit(30),
+  ]);
 
   if (!med) notFound();
-
-  const { data: logs } = await supabase
-    .from("mar_log")
-    .select("*")
-    .eq("medication_id", id)
-    .order("administered_at", { ascending: false })
-    .limit(30);
 
   async function logAdministration(formData: FormData) {
     "use server";

@@ -20,9 +20,8 @@ const NAV_ITEMS = [
   { key: "clients",     label: "Clients",          icon: "🏠", path: null,        externalHref: "/compliance/clients",   settingOnly: null },
   { key: "complaints",  label: "Complaints",       icon: "📋", path: null,        externalHref: "/compliance/complaints", settingOnly: null },
   { key: "reports",     label: "Reports",          icon: "📄", path: null,        externalHref: "/compliance/reports",   settingOnly: null },
-  // AFH-only tabs
-  { key: "medications", label: "MAR",              icon: "💊", path: null,        externalHref: "/dashboard/afh/medications", settingOnly: "afh" },
-  { key: "fire-drills", label: "Fire Drills",      icon: "🔥", path: null,        externalHref: "/dashboard/afh/fire-drills", settingOnly: "afh" },
+  { key: "medications", label: "MAR",         icon: "💊", path: null, externalHref: "/dashboard/afh/medications", settingOnly: "afh" as const },
+  { key: "fire-drills", label: "Fire Drills", icon: "🔥", path: null, externalHref: "/dashboard/afh/fire-drills", settingOnly: "afh" as const },
 ];
 
 export default function SettingComplianceLayout({

@@ -2,12 +2,18 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import nodemailer from "nodemailer";
 
-function admin() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
-}
+// Module-level singletons — created once, reused across requests
+const db = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
+
+const mailer = process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD
+  ? nodemailer.createTransport({
+      service: "gmail",
+      auth: { user: process.env.GMAIL_USER, pass: process.env.GMAIL_APP_PASSWORD },
+    })
+  : null;
 
 export async function POST(request: Request, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -16,9 +22,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
   const { firstName, lastName, email, phone, role, previousEmployer,
     yearsExperience, certifications, startDate, availability, notes } = body;
 
-  const db = admin();
-
-  // Get org branding + admin notification email
   const { data: org } = await db.from("organizations")
     .select("id, name, primary_color, logo_url")
     .eq("slug", slug)
@@ -26,19 +29,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
 
   if (!org) return NextResponse.json({ error: "Agency not found" }, { status: 404 });
 
-  // Send notification email to admin
-  const gmailUser = process.env.GMAIL_USER;
-  const gmailPass = process.env.GMAIL_APP_PASSWORD;
-  const notifyEmail = process.env.NOTIFICATION_EMAIL ?? gmailUser;
+  const notifyEmail = process.env.NOTIFICATION_EMAIL ?? process.env.GMAIL_USER;
 
-  if (gmailUser && gmailPass && notifyEmail) {
-    const transport = nodemailer.createTransport({
-      service: "gmail",
-      auth: { user: gmailUser, pass: gmailPass },
-    });
-
-    await transport.sendMail({
-      from: `"${org.name} Applications" <${gmailUser}>`,
+  if (mailer && notifyEmail) {
+    await mailer.sendMail({
+      from: `"${org.name} Applications" <${process.env.GMAIL_USER}>`,
       to: notifyEmail,
       subject: `New Application: ${firstName} ${lastName} — ${role}`,
       html: `

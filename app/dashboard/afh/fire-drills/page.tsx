@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentProfile } from "@/lib/auth/getCurrentProfile";
 import { createClient } from "@/lib/supabase/server";
+import { daysUntil } from "@/lib/compliance/waComplianceUtils";
 
 export const dynamic = "force-dynamic";
 const amber = "#b45309";
@@ -29,11 +30,9 @@ export default async function FireDrillsPage() {
   });
 
   const lastDrill = all[0];
-  const daysSinceLastDrill = lastDrill
-    ? Math.floor((today.getTime() - new Date(lastDrill.drill_date).getTime()) / 86400000)
-    : null;
-
-  const overdue = daysSinceLastDrill === null || daysSinceLastDrill > 31;
+  // daysUntil returns negative if in past — use negative to mean "days since"
+  const daysSince = lastDrill ? -(daysUntil(lastDrill.drill_date) ?? 0) : null;
+  const overdue = daysSince === null || daysSince > 31;
 
   return (
     <div className="space-y-6">
@@ -58,9 +57,9 @@ export default async function FireDrillsPage() {
               {overdue ? "🔴 Drill Overdue" : "🟢 Drill Current"}
             </p>
             <p className={`text-sm mt-1 ${overdue ? "text-red-700" : "text-emerald-700"}`}>
-              {daysSinceLastDrill === null
+              {daysSince === null
                 ? "No drills on record — first drill required immediately"
-                : `Last drill: ${daysSinceLastDrill} days ago (${new Date(lastDrill.drill_date).toLocaleDateString()})`}
+                : `Last drill: ${daysSince} days ago (${new Date(lastDrill.drill_date).toLocaleDateString()})`}
             </p>
             <p className={`text-xs mt-0.5 ${overdue ? "text-red-600" : "text-emerald-600"}`}>
               This month: {drillsThisMonth.length} drill{drillsThisMonth.length !== 1 ? "s" : ""} logged
