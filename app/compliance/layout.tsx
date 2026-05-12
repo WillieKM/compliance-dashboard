@@ -2,27 +2,31 @@ import Link from "next/link";
 import { getCurrentProfile } from "@/lib/auth/getCurrentProfile";
 import { redirect } from "next/navigation";
 
-const SETTINGS_NAV = [
-  { href: "/compliance/home-care",       label: "🏥 Home Care",       reg: "WAC 246-335" },
-  { href: "/compliance/afh",             label: "🏠 AFH",             reg: "WAC 388-76" },
-  { href: "/compliance/assisted-living", label: "🏢 Assisted Living", reg: "WAC 388-78A" },
-  { href: "/compliance/multi-service",   label: "🌐 Multi-Service",   reg: "Multiple" },
+const ALL_SETTINGS_NAV = [
+  { id: "HOME_CARE",       href: "/compliance/home-care",       label: "🏥 Home Care",       reg: "WAC 246-335" },
+  { id: "AFH",             href: "/compliance/afh",             label: "🏠 AFH",             reg: "WAC 388-76" },
+  { id: "ASSISTED_LIVING", href: "/compliance/assisted-living", label: "🏢 Assisted Living", reg: "WAC 388-78A" },
+  { id: "MULTI_SERVICE",   href: "/compliance/multi-service",   label: "🌐 Multi-Service",   reg: "Multiple" },
 ];
 
 const SHARED_NAV = [
-  { href: "/compliance",                   label: "Hub",              icon: "📊" },
-  { href: "/compliance/personnel",         label: "Personnel",        icon: "👥" },
-  { href: "/compliance/background-checks", label: "BG Checks",        icon: "🔍" },
-  { href: "/compliance/tb-assessments",    label: "TB",               icon: "🫁" },
-  { href: "/compliance/training",          label: "Training",         icon: "📚" },
-  { href: "/compliance/clients",           label: "Clients",          icon: "🏠" },
-  { href: "/compliance/complaints",        label: "Complaints",       icon: "📋" },
-  { href: "/compliance/reports",           label: "Reports",          icon: "📄" },
+  { href: "/compliance",                   label: "Hub",        icon: "📊" },
+  { href: "/compliance/personnel",         label: "Personnel",  icon: "👥" },
+  { href: "/compliance/background-checks", label: "BG Checks",  icon: "🔍" },
+  { href: "/compliance/tb-assessments",    label: "TB",         icon: "🫁" },
+  { href: "/compliance/training",          label: "Training",   icon: "📚" },
+  { href: "/compliance/clients",           label: "Clients",    icon: "🏠" },
+  { href: "/compliance/complaints",        label: "Complaints", icon: "📋" },
+  { href: "/compliance/reports",           label: "Reports",    icon: "📄" },
 ];
 
 export default async function ComplianceLayout({ children }: { children: React.ReactNode }) {
   const profile = await getCurrentProfile();
   if (!profile) redirect("/login");
+
+  // Only show care settings the org has enabled
+  const activeSettings = profile.organizations?.care_settings ?? ALL_SETTINGS_NAV.map(s => s.id);
+  const settingsNav = ALL_SETTINGS_NAV.filter(s => activeSettings.includes(s.id));
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: "#f9fafb" }}>
@@ -33,16 +37,16 @@ export default async function ComplianceLayout({ children }: { children: React.R
             WA Care Compliance
           </Link>
           <p className="text-xs mt-0.5" style={{ color: "#d4a574" }}>
-            {profile.organizations?.name} · WAC 246-335 / 388-76 / 388-78A
+            {profile.organizations?.name}
           </p>
         </div>
         <Link href="/dashboard" className="text-sm opacity-70 hover:opacity-100">← Dashboard</Link>
       </div>
 
-      {/* Care setting tabs */}
+      {/* Care setting tabs — filtered to org's settings */}
       <div className="bg-white border-b shadow-sm overflow-x-auto">
         <div className="flex min-w-max px-4 gap-1 pt-2">
-          {SETTINGS_NAV.map((item) => (
+          {settingsNav.map((item) => (
             <Link
               key={item.href}
               href={item.href}
@@ -53,7 +57,6 @@ export default async function ComplianceLayout({ children }: { children: React.R
             </Link>
           ))}
           <div className="flex-1" />
-          {/* Shared modules */}
           {SHARED_NAV.map((item) => (
             <Link
               key={item.href}
