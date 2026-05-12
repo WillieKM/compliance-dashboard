@@ -3,10 +3,10 @@ import { getCurrentProfile, getOrgColor } from "@/lib/auth/getCurrentProfile";
 import LogoutButton from "./LogoutButton";
 
 const ALL_DASHBOARDS = [
-  { id: "HOME_CARE",       label: "🏥 Home Care",        href: "/dashboard/home-care",       complianceHref: "/dashboard/home-care/compliance",       visitsHref: "/dashboard/home-care/visits" },
-  { id: "AFH",             label: "🏠 Adult Family Home", href: "/dashboard/afh",             complianceHref: "/dashboard/afh/compliance",             visitsHref: null },
-  { id: "ASSISTED_LIVING", label: "🏢 Assisted Living",   href: "/dashboard/assisted-living", complianceHref: "/dashboard/assisted-living/compliance", visitsHref: null },
-  { id: "MULTI_SERVICE",   label: "🌐 Multi-Service",     href: "/dashboard/multi-service",   complianceHref: "/dashboard/multi-service/compliance",   visitsHref: null },
+  { id: "HOME_CARE",       label: "🏥 Home Care",        href: "/dashboard/home-care",       complianceHref: "/dashboard/home-care/compliance",       visitsHref: "/dashboard/home-care/visits",   notesHref: "/dashboard/home-care/notes-review" },
+  { id: "AFH",             label: "🏠 Adult Family Home", href: "/dashboard/afh",             complianceHref: "/dashboard/afh/compliance",             visitsHref: null,                            notesHref: null },
+  { id: "ASSISTED_LIVING", label: "🏢 Assisted Living",   href: "/dashboard/assisted-living", complianceHref: "/dashboard/assisted-living/compliance", visitsHref: null,                            notesHref: "/dashboard/assisted-living/notes-review" },
+  { id: "MULTI_SERVICE",   label: "🌐 Multi-Service",     href: "/dashboard/multi-service",   complianceHref: "/dashboard/multi-service/compliance",   visitsHref: null,                            notesHref: null },
 ];
 
 const navItems = [
@@ -69,8 +69,13 @@ export default async function Sidebar() {
               <span>📋</span><span>Compliance</span>
             </Link>
             {item.visitsHref && (
-              <Link href={item.visitsHref} className="flex items-center gap-1.5 rounded-lg px-4 py-1.5 text-xs font-medium text-slate-500 hover:bg-blue-50 hover:text-blue-700 transition-colors ml-2 mb-1">
+              <Link href={item.visitsHref} className="flex items-center gap-1.5 rounded-lg px-4 py-1.5 text-xs font-medium text-slate-500 hover:bg-blue-50 hover:text-blue-700 transition-colors ml-2">
                 <span>🕐</span><span>Visits</span>
+              </Link>
+            )}
+            {item.notesHref && (
+              <Link href={item.notesHref} className="flex items-center gap-1.5 rounded-lg px-4 py-1.5 text-xs font-medium text-slate-500 hover:bg-amber-50 hover:text-amber-700 transition-colors ml-2 mb-1">
+                <span>📝</span><span>Notes Review</span>
               </Link>
             )}
           </div>

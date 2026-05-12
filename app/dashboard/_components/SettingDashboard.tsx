@@ -104,6 +104,12 @@ export default async function SettingDashboard({ setting }: { setting: CareSetti
               🕐 Visits
             </Link>
           )}
+          {(setting.id === "HOME_CARE" || setting.id === "ASSISTED_LIVING") && (
+            <Link href={`/dashboard/${complianceSlug}/notes-review`}
+              className="px-5 py-3 text-sm font-semibold text-slate-500 hover:text-slate-900 border-b-2 border-transparent hover:bg-slate-50 transition-all">
+              📝 Notes
+            </Link>
+          )}
         </div>
       </div>
 

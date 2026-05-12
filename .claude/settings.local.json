@@ -16,11 +16,13 @@
       "Bash(git push *)",
       "Bash(git commit *)",
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\willi\\\\compliance-dashboard\\\\app\" -Recurse -Name -Filter \"*lib*\" -o Directory)",
-      "Bash(Select-Object -First 10)"
+      "Bash(Select-Object -First 10)",
+      "Bash(sed -i 's/Report submitted for <strong>{clientName}<\\\\/strong>/Report submitted{clientName ? ` for ${clientName}` : \"\"}/g' \"c:/Users/willi/compliance-dashboard/app/portal/[slug]/clock-in/page.tsx\")"
     ],
     "additionalDirectories": [
       "C:\\Users\\willi\\my-student-portal\\assets\\js",
-      "C:\\Users\\willi\\my-student-portal"
+      "C:\\Users\\willi\\my-student-portal",
+      "c:\\Users\\willi\\compliance-dashboard\\app\\portal\\[slug]\\clock-in"
     ]
   }
 }
