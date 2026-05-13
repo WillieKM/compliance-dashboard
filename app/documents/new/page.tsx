@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { supabase } from "@/lib/supabase";
-import { FACILITY_ID } from "@/lib/constants";
+import { getCurrentProfile } from "@/lib/auth/getCurrentProfile";
+import { createClient } from "@/lib/supabase/server";
 import { generateAlerts } from "@/lib/compliance/generateAlerts";
 
 type SearchParams = Promise<{
@@ -27,6 +27,10 @@ export default async function NewDocumentPage({
 }: {
   searchParams: SearchParams;
 }) {
+  const profile = await getCurrentProfile();
+  if (!profile) redirect("/login");
+
+  const supabase = await createClient();
   const params = await searchParams;
 
   const ownerType = params.owner_type || "general";
@@ -36,7 +40,6 @@ export default async function NewDocumentPage({
   const backHref = getBackHref(ownerType, residentId, staffId);
   const ownerLabel = getOwnerLabel(ownerType);
 
-  // Show doc types relevant to the owner, plus facility/general types always
   const appliesToFilter =
     ownerType === "staff"
       ? ["staff", "general"]
@@ -62,6 +65,10 @@ export default async function NewDocumentPage({
   async function uploadDocument(formData: FormData) {
     "use server";
 
+    const p = await getCurrentProfile();
+    if (!p) throw new Error("Not authenticated");
+    const serverClient = await createClient();
+
     const file = formData.get("file") as File | null;
     const documentTypeId = String(formData.get("document_type_id") || "");
     const expirationDate = String(formData.get("expiration_date") || "");
@@ -69,41 +76,26 @@ export default async function NewDocumentPage({
     const residentId = String(formData.get("resident_id") || "");
     const staffId = String(formData.get("staff_id") || "");
 
-    if (!file || file.size === 0) {
-      throw new Error("No file selected");
-    }
-
-    if (!documentTypeId) {
-      throw new Error("Document type is required");
-    }
-
-    if (ownerType === "resident" && !residentId) {
-      throw new Error("Resident ID is required for resident documents");
-    }
-
-    if (ownerType === "staff" && !staffId) {
-      throw new Error("Staff ID is required for staff documents");
-    }
+    if (!file || file.size === 0) throw new Error("No file selected");
+    if (!documentTypeId) throw new Error("Document type is required");
 
     const safeFileName = file.name.replace(/[^a-zA-Z0-9._-]/g, "-");
-    const filePath = `${FACILITY_ID}/${ownerType}/${Date.now()}-${safeFileName}`;
+    const filePath = `${p.facility_id}/${ownerType}/${Date.now()}-${safeFileName}`;
 
-    const { error: uploadError } = await supabase.storage
+    const { error: uploadError } = await serverClient.storage
       .from("documents")
-      .upload(filePath, file, {
-        upsert: false,
-      });
+      .upload(filePath, file, { upsert: false });
 
     if (uploadError) {
       throw new Error(`Upload failed: ${uploadError.message}`);
     }
 
-    const { data: publicUrlData } = supabase.storage
+    const { data: publicUrlData } = serverClient.storage
       .from("documents")
       .getPublicUrl(filePath);
 
-    const { error: insertError } = await supabase.from("documents").insert({
-      facility_id: FACILITY_ID,
+    const { error: insertError } = await serverClient.from("documents").insert({
+      facility_id: p.facility_id,
       owner_type: ownerType,
       resident_id: ownerType === "resident" ? residentId : null,
       staff_id: ownerType === "staff" ? staffId : null,
