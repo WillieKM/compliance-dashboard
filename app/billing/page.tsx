@@ -114,7 +114,7 @@ export default function BillingPage() {
 
       <div className="rounded-xl bg-slate-50 border border-slate-200 p-5 text-sm text-slate-500">
         <p className="font-semibold text-slate-700 mb-1">💳 Secure payments by Stripe</p>
-        <p>All payments processed securely. Test mode active — use card <code className="bg-slate-100 px-1 rounded">4242 4242 4242 4242</code> with any future expiry.</p>
+        <p>All payments processed securely. Subscriptions are billed monthly and can be cancelled anytime.</p>
       </div>
     </div>
   );
