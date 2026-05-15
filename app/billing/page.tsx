@@ -86,14 +86,25 @@ export default function BillingPage() {
               ))}
             </ul>
 
-            <div className="sm:w-48 flex flex-col justify-center gap-3">
+            <div className="sm:w-52 flex flex-col justify-center gap-3">
+              <div className="rounded-xl border-2 p-3 text-center" style={{ borderColor: plan.color + "40", backgroundColor: plan.color + "08" }}>
+                <p className="text-xs font-bold uppercase tracking-wide mb-1" style={{ color: plan.color }}>🎉 Introductory Rate</p>
+                <div className="flex items-baseline justify-center gap-1">
+                  <span className="text-3xl font-bold text-slate-900">${plan.price}</span>
+                  <span className="text-slate-500 text-sm">/mo</span>
+                </div>
+                <p className="text-xs text-slate-500 mt-1">for your first 12 months</p>
+                <div className="mt-2 pt-2 border-t border-slate-200">
+                  <p className="text-xs text-slate-400">Then <strong>${(plan.price + 20).toFixed(2)}/mo</strong> after year 1</p>
+                </div>
+              </div>
               <button
                 onClick={() => subscribe(plan.id)}
                 disabled={loading !== null}
                 className="w-full rounded-xl py-3 font-bold text-white text-sm hover:opacity-90 disabled:opacity-60 transition-all"
                 style={{ backgroundColor: plan.color }}
               >
-                {loading === plan.id ? "Redirecting…" : `Subscribe — $${plan.price}/mo`}
+                {loading === plan.id ? "Redirecting…" : "Get Started"}
               </button>
               <p className="text-xs text-slate-400 text-center">Billed monthly · Cancel anytime</p>
             </div>

@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
 
-// Single price per care setting — server-side only
+// Regular (year 2+) prices — checkout uses these but coupon brings them down
 const PRICE_MAP: Record<string, string | undefined> = {
-  "HOME_CARE":       process.env.STRIPE_PRICE_HOME_CARE,
-  "AFH":             process.env.STRIPE_PRICE_AFH,
-  "ASSISTED_LIVING": process.env.STRIPE_PRICE_ASSISTED_LIVING,
-  "MULTI_SERVICE":   process.env.STRIPE_PRICE_MULTI_SERVICE,
+  "HOME_CARE":       process.env.STRIPE_PRICE_HOME_CARE_REGULAR,
+  "AFH":             process.env.STRIPE_PRICE_AFH_REGULAR,
+  "ASSISTED_LIVING": process.env.STRIPE_PRICE_ASSISTED_LIVING_REGULAR,
+  "MULTI_SERVICE":   process.env.STRIPE_PRICE_MULTI_SERVICE_REGULAR,
 };
 
 export async function POST(request: Request) {
@@ -16,20 +16,23 @@ export async function POST(request: Request) {
 
   if (!finalPriceId || !finalPriceId.startsWith("price_")) {
     return NextResponse.json(
-      { error: `Plan not configured. Add STRIPE_PRICE_${settingId} to Vercel environment variables.` },
+      { error: `Plan not configured. Add STRIPE_PRICE_${settingId}_REGULAR to Vercel environment variables.` },
       { status: 500 }
     );
   }
 
   const origin = request.headers.get("origin") ?? "http://localhost:3000";
+  const couponId = process.env.STRIPE_COUPON_INTRO_YEAR;
 
   const session = await stripe.checkout.sessions.create({
     mode: "subscription",
     line_items: [{ price: finalPriceId, quantity: 1 }],
+    // Apply $20-off coupon for first 12 months if configured
+    discounts: couponId ? [{ coupon: couponId }] : [],
     success_url: `${origin}/billing/success?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${origin}/billing/cancel`,
     billing_address_collection: "auto",
-    allow_promotion_codes: true,
+    allow_promotion_codes: !couponId, // only allow promo codes if no auto-coupon
   });
 
   return NextResponse.json({ url: session.url });
