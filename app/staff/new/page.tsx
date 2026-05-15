@@ -1,7 +1,14 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getCurrentProfile } from "@/lib/auth/getCurrentProfile";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@supabase/supabase-js";
+
+function admin() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+}
 
 export const dynamic = "force-dynamic";
 
@@ -13,8 +20,7 @@ export default async function NewStaffPage() {
     "use server";
     const p = await getCurrentProfile();
     if (!p) return;
-    const client = await createClient();
-    const { error } = await client.from("staff").insert({
+    const { error } = await admin().from("staff").insert({
       facility_id: p.facility_id,
       first_name:  String(formData.get("first_name") || ""),
       last_name:   String(formData.get("last_name") || ""),
