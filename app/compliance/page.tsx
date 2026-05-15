@@ -22,6 +22,8 @@ export default async function ComplianceHubPage() {
   const fid = profile.facility_id;
   const today = new Date().toISOString().split("T")[0];
 
+  const activeSettings: string[] = profile.organizations?.care_settings ?? ALL_COMPLIANCE_SETTINGS.map(s => s.id);
+
   const [personnelRes, complaintsRes, surveyRes] = await Promise.all([
     supabase.from("personnel_compliance").select("compliance_status, bg_check_renewal_due, tb_assessment_annual_due").eq("facility_id", fid),
     supabase.from("complaints").select("status").eq("facility_id", fid),
@@ -83,15 +85,24 @@ export default async function ComplianceHubPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           {ALL_COMPLIANCE_SETTINGS.map((setting) => {
             const pct = surveyPct(setting.slug);
+            const isActive = activeSettings.includes(setting.id);
             return (
-              <div key={setting.id} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
-                <div className="p-5 text-white" style={{ background: SETTING_HEADER_COLORS[setting.slug] }}>
+              <div key={setting.id}
+                className={`rounded-2xl border shadow-sm overflow-hidden transition-all ${isActive ? "border-slate-200 hover:shadow-md" : "border-slate-100 opacity-50 grayscale"}`}>
+                <div className="p-5 text-white relative" style={{ background: SETTING_HEADER_COLORS[setting.slug] }}>
+                  {!isActive && (
+                    <div className="absolute inset-0 bg-slate-900/30 flex items-center justify-center">
+                      <span className="bg-white/20 text-white text-xs font-bold px-3 py-1 rounded-full backdrop-blur-sm">
+                        🔒 Not in your plan
+                      </span>
+                    </div>
+                  )}
                   <div className="flex items-center justify-between">
                     <div>
                       <h3 className="text-xl font-bold">{setting.label}</h3>
                       <p className="text-xs opacity-75 mt-0.5">{setting.primaryRegulation} · {setting.regulatoryBody}</p>
                     </div>
-                    {pct !== null && (
+                    {pct !== null && isActive && (
                       <div className="text-right">
                         <p className="text-3xl font-bold">{pct}%</p>
                         <p className="text-xs opacity-60">survey ready</p>
@@ -99,7 +110,7 @@ export default async function ComplianceHubPage() {
                     )}
                   </div>
                 </div>
-                <div className="p-5 space-y-3">
+                <div className="p-5 space-y-3 bg-white">
                   <div className="space-y-1.5">
                     {setting.keyRequirements.slice(0, 3).map((req) => (
                       <p key={req} className="text-xs text-slate-500 flex items-center gap-1.5">
@@ -108,19 +119,31 @@ export default async function ComplianceHubPage() {
                     ))}
                   </div>
                   <div className="flex gap-2 pt-1">
-                    <Link
-                      href={`/compliance/${setting.slug}`}
-                      className="flex-1 text-center text-sm font-bold py-2 rounded-lg text-white hover:opacity-90 transition-opacity"
-                      style={{ background: SETTING_HEADER_COLORS[setting.slug] }}
-                    >
-                      Dashboard →
-                    </Link>
-                    <Link
-                      href={`/compliance/${setting.slug}/survey`}
-                      className="flex-1 text-center text-sm font-semibold py-2 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors"
-                    >
-                      Survey Checklist →
-                    </Link>
+                    {isActive ? (
+                      <Link
+                        href={`/compliance/${setting.slug}`}
+                        className="flex-1 text-center text-sm font-bold py-2 rounded-lg text-white hover:opacity-90 transition-opacity"
+                        style={{ background: SETTING_HEADER_COLORS[setting.slug] }}
+                      >
+                        Dashboard →
+                      </Link>
+                    ) : (
+                      <span className="flex-1 text-center text-sm font-medium py-2 rounded-lg bg-slate-100 text-slate-400 cursor-not-allowed">
+                        Not Available
+                      </span>
+                    )}
+                    {isActive ? (
+                      <Link
+                        href={`/compliance/${setting.slug}/survey`}
+                        className="flex-1 text-center text-sm font-semibold py-2 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors"
+                      >
+                        Survey Checklist →
+                      </Link>
+                    ) : (
+                      <span className="flex-1 text-center text-sm font-medium py-2 rounded-lg bg-slate-50 text-slate-300 cursor-not-allowed border border-slate-100">
+                        Survey Checklist
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
