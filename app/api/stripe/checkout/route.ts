@@ -1,26 +1,22 @@
 import { NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
 
-// Server-side price ID map — env vars never exposed to client
+// Single price per care setting — server-side only
 const PRICE_MAP: Record<string, string | undefined> = {
-  "HOME_CARE_starter":       process.env.STRIPE_PRICE_HOME_CARE_STARTER,
-  "HOME_CARE_pro":           process.env.STRIPE_PRICE_HOME_CARE_PRO,
-  "AFH_starter":             process.env.STRIPE_PRICE_AFH_STARTER,
-  "AFH_pro":                 process.env.STRIPE_PRICE_AFH_PRO,
-  "ASSISTED_LIVING_starter": process.env.STRIPE_PRICE_AL_STARTER,
-  "ASSISTED_LIVING_pro":     process.env.STRIPE_PRICE_AL_PRO,
-  "MULTI_SERVICE_starter":   process.env.STRIPE_PRICE_MS_STARTER,
-  "MULTI_SERVICE_pro":       process.env.STRIPE_PRICE_MS_PRO,
+  "HOME_CARE":       process.env.STRIPE_PRICE_HOME_CARE,
+  "AFH":             process.env.STRIPE_PRICE_AFH,
+  "ASSISTED_LIVING": process.env.STRIPE_PRICE_ASSISTED_LIVING,
+  "MULTI_SERVICE":   process.env.STRIPE_PRICE_MULTI_SERVICE,
 };
 
 export async function POST(request: Request) {
-  const { settingId, tier } = await request.json();
+  const { settingId } = await request.json();
 
-  const finalPriceId = PRICE_MAP[`${settingId}_${tier}`];
+  const finalPriceId = PRICE_MAP[settingId];
 
   if (!finalPriceId || !finalPriceId.startsWith("price_")) {
     return NextResponse.json(
-      { error: `Plan not configured. Add STRIPE_PRICE_${settingId}_${tier?.toUpperCase()} to Vercel environment variables.` },
+      { error: `Plan not configured. Add STRIPE_PRICE_${settingId} to Vercel environment variables.` },
       { status: 500 }
     );
   }
