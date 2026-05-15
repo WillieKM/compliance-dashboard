@@ -1,8 +1,16 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { getCurrentProfile } from "@/lib/auth/getCurrentProfile";
 import { createClient } from "@/lib/supabase/server";
-import { revalidatePath } from "next/cache";
+import { createClient as adminClient } from "@supabase/supabase-js";
+
+function admin() {
+  return adminClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+}
 
 export const dynamic = "force-dynamic";
 const purple = "#6d28d9";
@@ -23,12 +31,22 @@ export default async function ALVisitsPage() {
   const orgSlug = profile.organizations?.slug ?? null;
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
-  const { data: visits } = await supabase
+  const { data: visits, error: visitsError } = await supabase
     .from("care_visits")
     .select("*, visit_service_reports(id)")
     .eq("facility_id", fid)
     .order("clock_in_time", { ascending: false })
     .limit(100);
+
+  if (visitsError?.message?.includes("does not exist") || visitsError?.code === "42P01") {
+    return (
+      <div className="max-w-2xl mx-auto mt-12 text-center bg-white rounded-2xl border border-slate-200 p-10 shadow-sm">
+        <p className="text-4xl mb-4">🗄️</p>
+        <h2 className="text-xl font-bold text-slate-900 mb-2">Database setup needed</h2>
+        <p className="text-slate-500">Run <code className="bg-slate-100 px-2 py-0.5 rounded text-sm">supabase/create_care_visits_table.sql</code> in your Supabase SQL Editor.</p>
+      </div>
+    );
+  }
 
   const all = visits ?? [];
   const active     = all.filter(v => v.status === "active").length;
@@ -38,13 +56,13 @@ export default async function ALVisitsPage() {
   async function forceClockOut(formData: FormData) {
     "use server";
     const visitId = String(formData.get("visit_id"));
-    const client = await createClient();
     const now = new Date().toISOString();
-    const { data: visit } = await client.from("care_visits").select("clock_in_time").eq("id", visitId).single();
+    const db = admin();
+    const { data: visit } = await db.from("care_visits").select("clock_in_time").eq("id", visitId).single();
     const mins = visit?.clock_in_time
       ? Math.round((new Date(now).getTime() - new Date(visit.clock_in_time).getTime()) / 60000)
       : null;
-    await client.from("care_visits").update({
+    await db.from("care_visits").update({
       clock_out_time: now, status: "completed", duration_minutes: mins, notes: "Clocked out by admin",
     }).eq("id", visitId);
     revalidatePath("/dashboard/assisted-living/visits");
