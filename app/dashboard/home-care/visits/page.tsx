@@ -2,7 +2,6 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { getCurrentProfile } from "@/lib/auth/getCurrentProfile";
-import { createClient } from "@/lib/supabase/server";
 import { createClient as adminClient } from "@supabase/supabase-js";
 
 function admin() {
@@ -48,34 +47,30 @@ export default async function VisitsPage() {
     revalidatePath("/dashboard/home-care/visits");
   }
 
-  const supabase = await createClient();
   const fid = profile.facility_id;
+  const db = admin(); // use service role for all reads — avoids RLS/auth context issues
 
   // Gracefully handle missing table
-  const { data: visits, error: visitsError } = await supabase
-    .from("care_visits")
-    .select("*, visit_service_reports(id)")
-    .eq("facility_id", fid)
-    .order("clock_in_time", { ascending: false })
-    .limit(100);
-
-  if (visitsError?.message?.includes("does not exist") || visitsError?.code === "42P01") {
+  let visits: any[] = [];
+  let residents: any[] = [];
+  try {
+    const [visitsRes, residentsRes] = await Promise.all([
+      db.from("care_visits").select("*, visit_service_reports(id)").eq("facility_id", fid).order("clock_in_time", { ascending: false }).limit(100),
+      db.from("residents").select("id, first_name, last_name").eq("facility_id", fid).order("first_name"),
+    ]);
+    visits    = visitsRes.data ?? [];
+    residents = residentsRes.data ?? [];
+  } catch {
     return (
       <div className="max-w-2xl mx-auto mt-12 text-center bg-white rounded-2xl border border-slate-200 p-10 shadow-sm">
         <p className="text-4xl mb-4">🗄️</p>
         <h2 className="text-xl font-bold text-slate-900 mb-2">Database setup needed</h2>
-        <p className="text-slate-500 mb-4">Run <code className="bg-slate-100 px-2 py-0.5 rounded text-sm">supabase/create_care_visits_table.sql</code> in your Supabase SQL Editor to enable visit tracking.</p>
+        <p className="text-slate-500">Run <code className="bg-slate-100 px-2 py-0.5 rounded text-sm">supabase/create_care_visits_table.sql</code> in your Supabase SQL Editor.</p>
       </div>
     );
   }
 
-  const { data: residents } = await supabase
-    .from("residents")
-    .select("id, first_name, last_name")
-    .eq("facility_id", fid)
-    .order("first_name");
-
-  const all = visits ?? [];
+  const all = visits;
   const active    = all.filter((v) => v.status === "active").length;
   const today     = all.filter((v) => v.clock_in_time?.startsWith(new Date().toISOString().split("T")[0])).length;
   const withReport = all.filter((v) => v.visit_service_reports?.length > 0).length;
