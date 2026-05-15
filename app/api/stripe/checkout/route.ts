@@ -24,16 +24,20 @@ export async function POST(request: Request) {
   const origin = request.headers.get("origin") ?? "http://localhost:3000";
   const couponId = process.env.STRIPE_COUPON_INTRO_YEAR;
 
-  const session = await stripe.checkout.sessions.create({
-    mode: "subscription",
-    line_items: [{ price: finalPriceId, quantity: 1 }],
-    // Apply $20-off coupon for first 12 months if configured
-    discounts: couponId ? [{ coupon: couponId }] : [],
-    success_url: `${origin}/billing/success?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${origin}/billing/cancel`,
-    billing_address_collection: "auto",
-    allow_promotion_codes: !couponId, // only allow promo codes if no auto-coupon
-  });
-
-  return NextResponse.json({ url: session.url });
+  try {
+    const session = await stripe.checkout.sessions.create({
+      mode: "subscription",
+      line_items: [{ price: finalPriceId, quantity: 1 }],
+      discounts: couponId ? [{ coupon: couponId }] : [],
+      success_url: `${origin}/billing/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${origin}/billing/cancel`,
+      billing_address_collection: "auto",
+      allow_promotion_codes: !couponId,
+    });
+    return NextResponse.json({ url: session.url });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("Stripe checkout error:", message);
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }

@@ -35,9 +35,10 @@ export default function BillingPage() {
       });
       const data = await res.json();
       if (data.error) { setError(data.error); setLoading(null); return; }
+      if (!data.url) { setError("No checkout URL returned. Check Vercel logs."); setLoading(null); return; }
       window.location.href = data.url;
-    } catch {
-      setError("Something went wrong. Please try again.");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
       setLoading(null);
     }
   }
