@@ -23,8 +23,10 @@ export default function BrandingPage() {
   const [orgId, setOrgId]               = useState<string | null>(null);
   const [facilityId, setFacilityId]     = useState<string | null>(null);
   const [careSetting, setCareSetting]   = useState("HOME_CARE");
-  const [customDomain, setCustomDomain] = useState("");
-  const [saving, setSaving]             = useState(false);
+  const [customDomain, setCustomDomain]     = useState("");
+  const [domainStatus, setDomainStatus]     = useState<"idle"|"adding"|"added"|"verified"|"error">("idle");
+  const [domainMessage, setDomainMessage]   = useState("");
+  const [saving, setSaving]                 = useState(false);
   const [uploading, setUploading]       = useState(false);
   const [saved, setSaved]               = useState(false);
   const [error, setError]               = useState<string | null>(null);
@@ -242,41 +244,95 @@ export default function BrandingPage() {
 
         {/* Custom Domain */}
         <div className="rounded-2xl border border-slate-200 p-5 shadow-sm">
-          <h2 className="font-bold text-slate-900 mb-1">Custom Domain <span className="text-xs font-normal text-slate-400 ml-1">(optional)</span></h2>
-          <p className="text-xs text-slate-500 mb-4">
-            Point your own domain to this portal. Your clients visit <strong>compliance.yourdomain.com</strong> instead of the default URL.
-          </p>
+          <div className="flex items-start justify-between mb-3">
+            <div>
+              <h2 className="font-bold text-slate-900">Custom Domain</h2>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Let clients use their own domain — <strong>compliance.theirdomain.com</strong> loads their branded portal automatically.
+              </p>
+            </div>
+            {domainStatus === "verified" && (
+              <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full font-bold shrink-0">✓ Live</span>
+            )}
+            {domainStatus === "added" && (
+              <span className="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-full font-bold shrink-0">⏳ Pending DNS</span>
+            )}
+          </div>
 
           <div className="space-y-3">
-            <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1.5">Your domain / subdomain</label>
+            <div className="flex gap-2">
               <input
                 type="text"
                 value={customDomain}
-                onChange={(e) => setCustomDomain(e.target.value.toLowerCase().trim())}
-                placeholder="e.g. compliance.benmarrhomecare.com"
-                className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm font-mono text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                onChange={(e) => { setCustomDomain(e.target.value.toLowerCase().trim()); setDomainStatus("idle"); }}
+                placeholder="compliance.benmarrhomecare.com"
+                className="flex-1 rounded-lg border border-slate-300 px-3 py-2.5 text-sm font-mono text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
-              <p className="text-xs text-slate-400 mt-1">Save first, then set up the DNS record below</p>
+              <button
+                type="button"
+                disabled={!customDomain || domainStatus === "adding"}
+                onClick={async () => {
+                  setDomainStatus("adding");
+                  setDomainMessage("");
+                  try {
+                    const res = await fetch("/api/org/domain", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ domain: customDomain }),
+                    });
+                    const data = await res.json();
+                    setDomainMessage(data.message || "");
+                    setDomainStatus(data.verified ? "verified" : data.success ? "added" : "error");
+                  } catch {
+                    setDomainStatus("error");
+                    setDomainMessage("Something went wrong. Try again.");
+                  }
+                }}
+                className="px-4 py-2.5 rounded-lg text-white text-sm font-bold disabled:opacity-50 hover:opacity-90 whitespace-nowrap"
+                style={{ backgroundColor: "#1a3a52" }}
+              >
+                {domainStatus === "adding" ? "Adding…" : "Add Domain"}
+              </button>
             </div>
 
-            {customDomain && (
-              <div className="rounded-xl bg-slate-900 p-4 text-sm">
-                <p className="text-slate-400 text-xs font-semibold uppercase tracking-wide mb-3">DNS Setup Instructions</p>
-                <p className="text-slate-300 text-xs mb-2">Add this record at your domain registrar (GoDaddy, Cloudflare, Namecheap, etc.):</p>
+            {domainMessage && (
+              <p className={`text-xs px-3 py-2 rounded-lg ${domainStatus === "error" ? "bg-red-50 text-red-700" : domainStatus === "verified" ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}>
+                {domainMessage}
+              </p>
+            )}
+
+            {customDomain && domainStatus !== "idle" && domainStatus !== "error" && (
+              <div className="rounded-xl bg-slate-900 p-4">
+                <p className="text-slate-400 text-xs font-semibold uppercase tracking-wide mb-3">
+                  DNS Record — Add at your registrar
+                </p>
                 <div className="bg-slate-800 rounded-lg p-3 font-mono text-xs">
-                  <div className="grid grid-cols-3 gap-4 text-slate-400 mb-2 text-[10px] uppercase">
-                    <span>Type</span><span>Name</span><span>Value</span>
+                  <div className="grid grid-cols-3 gap-3 text-slate-500 mb-2 text-[10px] uppercase">
+                    <span>Type</span><span>Name / Host</span><span>Value / Points to</span>
                   </div>
-                  <div className="grid grid-cols-3 gap-4 text-emerald-400">
+                  <div className="grid grid-cols-3 gap-3 text-emerald-400">
                     <span>CNAME</span>
-                    <span>{customDomain.includes(".") ? customDomain.split(".")[0] : customDomain}</span>
-                    <span className="truncate">{(appUrl).replace("https://", "").replace("http://", "")}</span>
+                    <span>{customDomain.includes(".") ? customDomain.split(".").slice(0, -2).join(".") || "@" : customDomain}</span>
+                    <span className="truncate">{appUrl.replace("https://", "").replace("http://", "")}</span>
                   </div>
                 </div>
-                <p className="text-slate-400 text-xs mt-3">
-                  ⏱ DNS changes take 5–30 minutes to propagate. Once active, <code className="bg-slate-700 px-1 rounded">{customDomain}</code> will load your branded portal.
-                </p>
+                <div className="mt-3 flex items-center justify-between">
+                  <p className="text-slate-400 text-xs">⏱ DNS takes 5–30 min to propagate.</p>
+                  {domainStatus === "added" && (
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        const res = await fetch(`/api/org/domain?domain=${customDomain}`);
+                        const data = await res.json();
+                        if (data.verified) { setDomainStatus("verified"); setDomainMessage("✓ Domain is live!"); }
+                        else setDomainMessage("Not verified yet — DNS may still be propagating.");
+                      }}
+                      className="text-xs text-emerald-400 hover:text-emerald-300 underline"
+                    >
+                      Check status
+                    </button>
+                  )}
+                </div>
               </div>
             )}
           </div>
