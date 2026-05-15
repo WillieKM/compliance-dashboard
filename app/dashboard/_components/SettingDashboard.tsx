@@ -99,10 +99,16 @@ export default async function SettingDashboard({ setting }: { setting: CareSetti
             🔔 Alerts
           </Link>
           {setting.id === "HOME_CARE" && (
-            <Link href="/dashboard/home-care/visits"
-              className="px-5 py-3 text-sm font-semibold text-slate-500 hover:text-slate-900 border-b-2 border-transparent hover:bg-slate-50 transition-all">
-              🕐 Visits
-            </Link>
+            <>
+              <Link href="/dashboard/home-care/visits"
+                className="px-5 py-3 text-sm font-semibold text-slate-500 hover:text-slate-900 border-b-2 border-transparent hover:bg-slate-50 transition-all">
+                🕐 Visits
+              </Link>
+              <Link href="/dashboard/home-care/schedule"
+                className="px-5 py-3 text-sm font-semibold text-slate-500 hover:text-slate-900 border-b-2 border-transparent hover:bg-slate-50 transition-all">
+                📅 Schedule
+              </Link>
+            </>
           )}
           {setting.id === "ASSISTED_LIVING" && (
             <Link href="/dashboard/assisted-living/visits"
@@ -221,13 +227,13 @@ export default async function SettingDashboard({ setting }: { setting: CareSetti
         {/* AFH quick-access cards */}
         {setting.id === "AFH" && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Link href="/dashboard/afh/medications"
+            <Link href="/dashboard/afh/medications/today"
               className="rounded-2xl border-2 p-4 shadow-sm hover:shadow-md transition-all"
-              style={{ borderColor: "#b45309", background: "#fffbeb" }}>
+              style={{ borderColor: "#b45309", background: "#fef3c7" }}>
               <span className="text-3xl block mb-2">💊</span>
-              <h3 className="font-bold text-slate-900 text-sm">MAR Tracking</h3>
-              <p className="text-xs text-slate-500 mt-0.5">Medication admin records</p>
-              <p className="text-xs mt-1" style={{ color: "#b45309" }}>WAC 388-76-10530 →</p>
+              <h3 className="font-bold text-slate-900 text-sm">Today&apos;s eMAR</h3>
+              <p className="text-xs text-slate-500 mt-0.5">Give / log medications now</p>
+              <p className="text-xs mt-1 font-bold" style={{ color: "#b45309" }}>Mark doses →</p>
             </Link>
             <Link href="/dashboard/afh/fire-drills"
               className="rounded-2xl border-2 p-4 shadow-sm hover:shadow-md transition-all"

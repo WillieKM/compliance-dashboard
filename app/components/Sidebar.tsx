@@ -3,10 +3,10 @@ import { getCurrentProfile, getOrgColor } from "@/lib/auth/getCurrentProfile";
 import LogoutButton from "./LogoutButton";
 
 const ALL_DASHBOARDS = [
-  { id: "HOME_CARE",       label: "🏥 Home Care",        href: "/dashboard/home-care",       complianceHref: "/dashboard/home-care/compliance",       visitsHref: "/dashboard/home-care/visits",   notesHref: "/dashboard/home-care/notes-review" },
-  { id: "AFH",             label: "🏠 Adult Family Home", href: "/dashboard/afh",             complianceHref: "/dashboard/afh/compliance",             visitsHref: null,                            notesHref: null },
-  { id: "ASSISTED_LIVING", label: "🏢 Assisted Living",   href: "/dashboard/assisted-living", complianceHref: "/dashboard/assisted-living/compliance", visitsHref: "/dashboard/assisted-living/visits",     notesHref: "/dashboard/assisted-living/notes-review" },
-  { id: "MULTI_SERVICE",   label: "🌐 Multi-Service",     href: "/dashboard/multi-service",   complianceHref: "/dashboard/multi-service/compliance",   visitsHref: null,                            notesHref: null },
+  { id: "HOME_CARE",       label: "🏥 Home Care",        href: "/dashboard/home-care",       complianceHref: "/dashboard/home-care/compliance",       visitsHref: "/dashboard/home-care/visits",           notesHref: "/dashboard/home-care/notes-review",       scheduleHref: "/dashboard/home-care/schedule" },
+  { id: "AFH",             label: "🏠 Adult Family Home", href: "/dashboard/afh",             complianceHref: "/dashboard/afh/compliance",             visitsHref: null,                                    notesHref: null,                                      scheduleHref: null },
+  { id: "ASSISTED_LIVING", label: "🏢 Assisted Living",   href: "/dashboard/assisted-living", complianceHref: "/dashboard/assisted-living/compliance", visitsHref: "/dashboard/assisted-living/visits",     notesHref: "/dashboard/assisted-living/notes-review", scheduleHref: null },
+  { id: "MULTI_SERVICE",   label: "🌐 Multi-Service",     href: "/dashboard/multi-service",   complianceHref: "/dashboard/multi-service/compliance",   visitsHref: null,                                    notesHref: null,                                      scheduleHref: null },
 ];
 
 const navItems = [
@@ -71,6 +71,11 @@ export default async function Sidebar() {
             {item.visitsHref && (
               <Link href={item.visitsHref} className="flex items-center gap-1.5 rounded-lg px-4 py-1.5 text-xs font-medium text-slate-500 hover:bg-blue-50 hover:text-blue-700 transition-colors ml-2">
                 <span>🕐</span><span>Visits</span>
+              </Link>
+            )}
+            {item.scheduleHref && (
+              <Link href={item.scheduleHref} className="flex items-center gap-1.5 rounded-lg px-4 py-1.5 text-xs font-medium text-slate-500 hover:bg-blue-50 hover:text-blue-700 transition-colors ml-2">
+                <span>📅</span><span>Schedule</span>
               </Link>
             )}
             {item.notesHref && (
