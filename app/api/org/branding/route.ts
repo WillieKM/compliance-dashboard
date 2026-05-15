@@ -4,7 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 
 export async function POST(request: Request) {
   const body = await request.json();
-  const { name, slug, tagline, primaryColor, logoUrl, careSetting } = body;
+  const { name, slug, tagline, primaryColor, logoUrl, careSetting, customDomain } = body;
 
   // Get the authenticated user's org
   const supabase = await createServerClient();
@@ -38,6 +38,7 @@ export async function POST(request: Request) {
       primary_color: primaryColor || "#1a3a52",
       logo_url: logoUrl || null,
       care_settings: careSetting ? [careSetting] : undefined,
+      custom_domain: customDomain ?? null,
     })
     .eq("id", profile.organization_id);
 

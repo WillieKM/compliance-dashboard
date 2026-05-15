@@ -24,7 +24,7 @@ export async function GET() {
 
   const { data: org } = await admin
     .from("organizations")
-    .select("id, name, slug, primary_color, logo_url, tagline, care_settings")
+    .select("id, name, slug, primary_color, logo_url, tagline, care_settings, custom_domain")
     .eq("id", profile.organization_id)
     .maybeSingle();
 

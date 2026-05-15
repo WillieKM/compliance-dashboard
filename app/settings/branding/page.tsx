@@ -23,6 +23,7 @@ export default function BrandingPage() {
   const [orgId, setOrgId]               = useState<string | null>(null);
   const [facilityId, setFacilityId]     = useState<string | null>(null);
   const [careSetting, setCareSetting]   = useState("HOME_CARE");
+  const [customDomain, setCustomDomain] = useState("");
   const [saving, setSaving]             = useState(false);
   const [uploading, setUploading]       = useState(false);
   const [saved, setSaved]               = useState(false);
@@ -42,6 +43,7 @@ export default function BrandingPage() {
         setTagline(org.tagline ?? "");
         setPrimaryColor(org.primary_color ?? "#1a3a52");
         setLogoUrl(org.logo_url ?? null);
+        setCustomDomain(org.custom_domain ?? "");
         const settings: string[] = org.care_settings ?? [];
         setCareSetting(settings[0] ?? "HOME_CARE");
       }
@@ -83,6 +85,7 @@ export default function BrandingPage() {
         primaryColor,
         logoUrl,
         careSetting,
+        customDomain: customDomain.trim().toLowerCase() || null,
       }),
     });
 
@@ -234,6 +237,48 @@ export default function BrandingPage() {
               className="w-10 h-10 rounded-lg border border-slate-300 cursor-pointer" />
             <input type="text" value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value)}
               placeholder="#1a3a52" className="w-28 rounded-lg border border-slate-300 px-3 py-2 text-sm font-mono" />
+          </div>
+        </div>
+
+        {/* Custom Domain */}
+        <div className="rounded-2xl border border-slate-200 p-5 shadow-sm">
+          <h2 className="font-bold text-slate-900 mb-1">Custom Domain <span className="text-xs font-normal text-slate-400 ml-1">(optional)</span></h2>
+          <p className="text-xs text-slate-500 mb-4">
+            Point your own domain to this portal. Your clients visit <strong>compliance.yourdomain.com</strong> instead of the default URL.
+          </p>
+
+          <div className="space-y-3">
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-1.5">Your domain / subdomain</label>
+              <input
+                type="text"
+                value={customDomain}
+                onChange={(e) => setCustomDomain(e.target.value.toLowerCase().trim())}
+                placeholder="e.g. compliance.benmarrhomecare.com"
+                className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm font-mono text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <p className="text-xs text-slate-400 mt-1">Save first, then set up the DNS record below</p>
+            </div>
+
+            {customDomain && (
+              <div className="rounded-xl bg-slate-900 p-4 text-sm">
+                <p className="text-slate-400 text-xs font-semibold uppercase tracking-wide mb-3">DNS Setup Instructions</p>
+                <p className="text-slate-300 text-xs mb-2">Add this record at your domain registrar (GoDaddy, Cloudflare, Namecheap, etc.):</p>
+                <div className="bg-slate-800 rounded-lg p-3 font-mono text-xs">
+                  <div className="grid grid-cols-3 gap-4 text-slate-400 mb-2 text-[10px] uppercase">
+                    <span>Type</span><span>Name</span><span>Value</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-4 text-emerald-400">
+                    <span>CNAME</span>
+                    <span>{customDomain.includes(".") ? customDomain.split(".")[0] : customDomain}</span>
+                    <span className="truncate">{(appUrl).replace("https://", "").replace("http://", "")}</span>
+                  </div>
+                </div>
+                <p className="text-slate-400 text-xs mt-3">
+                  ⏱ DNS changes take 5–30 minutes to propagate. Once active, <code className="bg-slate-700 px-1 rounded">{customDomain}</code> will load your branded portal.
+                </p>
+              </div>
+            )}
           </div>
         </div>
 
