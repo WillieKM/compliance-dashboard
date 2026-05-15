@@ -22,7 +22,10 @@ export default async function ComplianceHubPage() {
   const fid = profile.facility_id;
   const today = new Date().toISOString().split("T")[0];
 
-  const activeSettings: string[] = profile.organizations?.care_settings ?? ALL_COMPLIANCE_SETTINGS.map(s => s.id);
+  const rawSettings = profile.organizations?.care_settings as string[] | null;
+  const activeSettings: string[] = (rawSettings && rawSettings.length > 0)
+    ? rawSettings
+    : ALL_COMPLIANCE_SETTINGS.map(s => s.id);
 
   const [personnelRes, complaintsRes, surveyRes] = await Promise.all([
     supabase.from("personnel_compliance").select("compliance_status, bg_check_renewal_due, tb_assessment_annual_due").eq("facility_id", fid),
