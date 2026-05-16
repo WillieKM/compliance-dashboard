@@ -1,7 +1,14 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentProfile } from "@/lib/auth/getCurrentProfile";
-import { createClient } from "@/lib/supabase/server";
+import { createClient as adminClient } from "@supabase/supabase-js";
+
+function admin() {
+  return adminClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+}
 
 export const dynamic = "force-dynamic";
 
@@ -16,10 +23,7 @@ export default async function NotesReviewPage({ settingSlug, settingLabel, backH
   const profile = await getCurrentProfile();
   if (!profile) redirect("/login");
 
-  const supabase = await createClient();
-
-  // Fetch visits with their service reports (notes)
-  const { data } = await supabase
+  const { data } = await admin()
     .from("care_visits")
     .select(`
       id,
@@ -39,7 +43,6 @@ export default async function NotesReviewPage({ settingSlug, settingLabel, backH
       )
     `)
     .eq("facility_id", profile.facility_id)
-    .not("visit_service_reports", "is", null)
     .order("clock_in_time", { ascending: false })
     .limit(100);
 
@@ -56,7 +59,7 @@ export default async function NotesReviewPage({ settingSlug, settingLabel, backH
         submitted_at: string;
       }[] | null) ?? [];
       return reports
-        .filter(r => r.caregiver_notes && r.caregiver_notes.trim())
+        .filter(r => r.submitted_at)
         .map(r => ({
           visitId:      v.id,
           caregiver:    v.caregiver_name,
