@@ -28,11 +28,10 @@ export async function POST(request: Request) {
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       line_items: [{ price: finalPriceId, quantity: 1 }],
-      discounts: couponId ? [{ coupon: couponId }] : [],
+      ...(couponId ? { discounts: [{ coupon: couponId }] } : { allow_promotion_codes: true }),
       success_url: `${origin}/billing/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/billing/cancel`,
       billing_address_collection: "auto",
-      allow_promotion_codes: !couponId,
     });
     return NextResponse.json({ url: session.url });
   } catch (err: unknown) {
