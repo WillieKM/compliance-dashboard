@@ -24,7 +24,7 @@ export default async function ComplianceHubPage() {
 
   const rawSettings = profile.organizations?.care_settings as string[] | null;
   const activeSettings: string[] = (rawSettings && rawSettings.length > 0)
-    ? rawSettings
+    ? rawSettings.map(s => s.toLowerCase().replace(/_/g, "-"))
     : ALL_COMPLIANCE_SETTINGS.map(s => s.id);
 
   const [personnelRes, complaintsRes, surveyRes] = await Promise.all([
