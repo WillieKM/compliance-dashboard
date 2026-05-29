@@ -8,6 +8,7 @@ type SearchParams = Promise<{
   owner_type?: string;
   resident_id?: string;
   staff_id?: string;
+  error?: string;
 }>;
 
 function getBackHref(ownerType: string, residentId: string, staffId: string) {
@@ -36,6 +37,7 @@ export default async function NewDocumentPage({
   const ownerType = params.owner_type || "general";
   const residentId = params.resident_id || "";
   const staffId = params.staff_id || "";
+  const pageError = params.error || "";
 
   const backHref = getBackHref(ownerType, residentId, staffId);
   const ownerLabel = getOwnerLabel(ownerType);
@@ -66,7 +68,7 @@ export default async function NewDocumentPage({
     "use server";
 
     const p = await getCurrentProfile();
-    if (!p) throw new Error("Not authenticated");
+    if (!p) redirect("/login");
     const serverClient = await createClient();
 
     const file = formData.get("file") as File | null;
@@ -76,8 +78,10 @@ export default async function NewDocumentPage({
     const residentId = String(formData.get("resident_id") || "");
     const staffId = String(formData.get("staff_id") || "");
 
-    if (!file || file.size === 0) throw new Error("No file selected");
-    if (!documentTypeId) throw new Error("Document type is required");
+    const errBase = `/documents/new?owner_type=${ownerType}&resident_id=${residentId}&staff_id=${staffId}`;
+
+    if (!file || file.size === 0) redirect(`${errBase}&error=No+file+selected`);
+    if (!documentTypeId) redirect(`${errBase}&error=Document+type+is+required`);
 
     const safeFileName = file.name.replace(/[^a-zA-Z0-9._-]/g, "-");
     const filePath = `${p.facility_id}/${ownerType}/${Date.now()}-${safeFileName}`;
@@ -86,9 +90,7 @@ export default async function NewDocumentPage({
       .from("documents")
       .upload(filePath, file, { upsert: false });
 
-    if (uploadError) {
-      throw new Error(`Upload failed: ${uploadError.message}`);
-    }
+    if (uploadError) redirect(`${errBase}&error=${encodeURIComponent("Upload failed: " + uploadError.message)}`);
 
     const { data: publicUrlData } = serverClient.storage
       .from("documents")
@@ -106,20 +108,12 @@ export default async function NewDocumentPage({
       status: "uploaded",
     });
 
-    if (insertError) {
-      throw new Error(`Insert failed: ${insertError.message}`);
-    }
+    if (insertError) redirect(`${errBase}&error=${encodeURIComponent("Save failed: " + insertError.message)}`);
 
-    await generateAlerts();
+    try { await generateAlerts(); } catch {}
 
-    if (ownerType === "resident" && residentId) {
-      redirect(`/residents/${residentId}`);
-    }
-
-    if (ownerType === "staff" && staffId) {
-      redirect(`/staff/${staffId}`);
-    }
-
+    if (ownerType === "resident" && residentId) redirect(`/residents/${residentId}`);
+    if (ownerType === "staff" && staffId) redirect(`/staff/${staffId}`);
     redirect("/documents");
   }
 
@@ -139,6 +133,7 @@ export default async function NewDocumentPage({
         </p>
       </div>
 
+      {pageError && <div className="rounded-lg bg-red-100 border border-red-200 p-4 text-sm text-red-700">{pageError}</div>}
       {documentTypesError && (
         <div className="rounded-lg bg-red-100 p-4 text-red-700">
           Failed to load document types: {documentTypesError.message}
