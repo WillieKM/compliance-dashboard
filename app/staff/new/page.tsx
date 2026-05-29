@@ -12,14 +12,15 @@ function admin() {
 
 export const dynamic = "force-dynamic";
 
-export default async function NewStaffPage() {
+export default async function NewStaffPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
   const profile = await getCurrentProfile();
   if (!profile) redirect("/login");
+  const { error: pageError } = await searchParams;
 
   async function createStaff(formData: FormData) {
     "use server";
     const p = await getCurrentProfile();
-    if (!p) return;
+    if (!p) redirect("/login");
     const { error } = await admin().from("staff").insert({
       facility_id: p.facility_id,
       first_name:  String(formData.get("first_name") || ""),
@@ -29,7 +30,7 @@ export default async function NewStaffPage() {
       phone:       String(formData.get("phone") || "") || null,
       status:      "active",
     });
-    if (error) throw new Error(error.message);
+    if (error) redirect(`/staff/new?error=${encodeURIComponent(error.message)}`);
     redirect("/staff");
   }
 
@@ -39,6 +40,7 @@ export default async function NewStaffPage() {
     <div>
       <Link href="/staff" className="text-blue-600 hover:underline text-sm">← Back to Staff</Link>
       <h1 className="text-4xl font-bold my-6">Add Staff Member</h1>
+      {pageError && <div className="mb-4 rounded-lg bg-red-100 border border-red-200 p-3 text-sm text-red-700">{pageError}</div>}
       <div className="bg-white rounded-xl shadow p-6 max-w-2xl">
         <form action={createStaff} className="space-y-5">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

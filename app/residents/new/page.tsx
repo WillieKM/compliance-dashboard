@@ -12,14 +12,15 @@ function admin() {
 
 export const dynamic = "force-dynamic";
 
-export default async function NewResidentPage() {
+export default async function NewResidentPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
   const profile = await getCurrentProfile();
   if (!profile) redirect("/login");
+  const { error: pageError } = await searchParams;
 
   async function saveResident(formData: FormData) {
     "use server";
     const p = await getCurrentProfile();
-    if (!p) return;
+    if (!p) redirect("/login");
     const { error } = await admin().from("residents").insert({
       facility_id:  p.facility_id,
       first_name:   String(formData.get("first_name") || ""),
@@ -27,7 +28,7 @@ export default async function NewResidentPage() {
       status:       String(formData.get("status") || "Active"),
       room_number:  String(formData.get("room_number") || "") || null,
     });
-    if (error) throw new Error(error.message);
+    if (error) redirect(`/residents/new?error=${encodeURIComponent(error.message)}`);
     redirect("/residents");
   }
 
@@ -38,6 +39,7 @@ export default async function NewResidentPage() {
       <Link href="/residents" className="text-blue-600 hover:underline text-sm">← Back to Residents</Link>
       <h1 className="text-4xl font-bold my-6">Add Resident</h1>
 
+      {pageError && <div className="mb-4 rounded-lg bg-red-100 border border-red-200 p-3 text-sm text-red-700">{pageError}</div>}
       <form action={saveResident} className="bg-white p-6 rounded-xl shadow space-y-5">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
