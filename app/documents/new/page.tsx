@@ -110,7 +110,7 @@ export default async function NewDocumentPage({
 
     if (insertError) redirect(`${errBase}&error=${encodeURIComponent("Save failed: " + insertError.message)}`);
 
-    try { await generateAlerts(); } catch {}
+    try { await generateAlerts(p.facility_id); } catch {}
 
     if (ownerType === "resident" && residentId) redirect(`/residents/${residentId}`);
     if (ownerType === "staff" && staffId) redirect(`/staff/${staffId}`);
