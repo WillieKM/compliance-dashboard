@@ -1,11 +1,20 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { createClient as createServerClient } from "@/lib/supabase/server";
 
 function admin() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
+}
+
+async function requireSuperAdmin() {
+  const supabase = await createServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+  const { data: profile } = await admin().from("profiles").select("is_super_admin").eq("id", user.id).maybeSingle();
+  return profile?.is_super_admin ? user : null;
 }
 
 function generateCode(): string {
@@ -15,6 +24,9 @@ function generateCode(): string {
 
 // POST — create a new invite code
 export async function POST(request: Request) {
+  const user = await requireSuperAdmin();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
   const { createdFor, careSetting, notes, expiresInDays } = await request.json();
 
   let code = generateCode();
@@ -44,6 +56,9 @@ export async function POST(request: Request) {
 
 // DELETE — revoke a code
 export async function DELETE(request: Request) {
+  const user = await requireSuperAdmin();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
   const { id } = await request.json();
   await admin().from("invite_codes").delete().eq("id", id);
   return NextResponse.json({ ok: true });

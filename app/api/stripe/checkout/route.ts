@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
+import { getCurrentProfile } from "@/lib/auth/getCurrentProfile";
 
-// Regular (year 2+) prices — checkout uses these but coupon brings them down
 const PRICE_MAP: Record<string, string | undefined> = {
   "HOME_CARE":       process.env.STRIPE_PRICE_HOME_CARE_REGULAR,
   "AFH":             process.env.STRIPE_PRICE_AFH_REGULAR,
@@ -10,8 +10,10 @@ const PRICE_MAP: Record<string, string | undefined> = {
 };
 
 export async function POST(request: Request) {
-  const { settingId } = await request.json();
+  const profile = await getCurrentProfile();
+  if (!profile) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  const { settingId } = await request.json();
   const finalPriceId = PRICE_MAP[settingId];
 
   if (!finalPriceId || !finalPriceId.startsWith("price_")) {
@@ -32,6 +34,10 @@ export async function POST(request: Request) {
       success_url: `${origin}/billing/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/billing/cancel`,
       billing_address_collection: "auto",
+      metadata: {
+        organization_id: profile.organization_id,
+        plan_id: settingId,
+      },
     });
     return NextResponse.json({ url: session.url });
   } catch (err: unknown) {
