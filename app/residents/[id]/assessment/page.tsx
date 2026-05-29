@@ -47,6 +47,12 @@ export default function AssessmentPage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [settingLabel, setSettingLabel] = useState("Resident");
+
+  const SETTING_LABELS: Record<string, string> = {
+    HOME_CARE: "Home Care", AFH: "AFH",
+    ASSISTED_LIVING: "Assisted Living", MULTI_SERVICE: "Multi-Service",
+  };
 
   useEffect(() => {
     supabase
@@ -61,6 +67,14 @@ export default function AssessmentPage() {
           setData((d) => ({ ...d, residentName: name }));
         }
       });
+
+    fetch("/api/org/me")
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        const setting = d?.org?.care_settings?.[0];
+        if (setting && SETTING_LABELS[setting]) setSettingLabel(SETTING_LABELS[setting]);
+      })
+      .catch(() => {});
   }, [residentId]);
 
   function set(field: keyof AssessmentData, value: string) {
@@ -116,7 +130,7 @@ export default function AssessmentPage() {
         <Link href={`/residents/${residentId}`} className="text-blue-600 hover:underline text-sm">
           ← Back to {residentName || "Resident"}
         </Link>
-        <h1 className="text-3xl font-bold text-slate-900 mt-2">AFH Resident Assessment</h1>
+        <h1 className="text-3xl font-bold text-slate-900 mt-2">{settingLabel} Resident Assessment</h1>
         <p className="text-slate-500 mt-1">Complete all sections to generate a care plan</p>
       </div>
 
