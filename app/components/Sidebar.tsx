@@ -97,9 +97,11 @@ export default async function Sidebar() {
               {item.label}
             </Link>
           ))}
-          {/* Branding for all users */}
           <Link href="/settings/branding" className="block rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-slate-50 hover:text-slate-900 transition-colors">
             ⚙ Branding
+          </Link>
+          <Link href="/settings/account" className="block rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-slate-50 hover:text-slate-900 transition-colors">
+            👤 Account Settings
           </Link>
           {/* Invite Codes — super admin only */}
           {isSuperAdmin && (
