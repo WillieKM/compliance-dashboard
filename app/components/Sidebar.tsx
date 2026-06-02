@@ -124,10 +124,7 @@ export default async function Sidebar() {
               📋 Staff Application ↗
             </Link>
             <Link href={`/portal/${orgSlug}/clock-in`} className="block rounded-lg px-3 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50 transition-colors">
-              🕐 Staff Clock In ↗
-            </Link>
-            <Link href={`/portal/${orgSlug}/notes`} className="block rounded-lg px-3 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50 transition-colors">
-              📝 Caregiver Notes ↗
+              🕐 Caregiver Portal ↗
             </Link>
           </>
         ) : (

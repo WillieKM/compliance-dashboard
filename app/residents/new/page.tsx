@@ -27,6 +27,7 @@ export default async function NewResidentPage({ searchParams }: { searchParams: 
       last_name:    String(formData.get("last_name") || ""),
       status:       String(formData.get("status") || "Active"),
       room_number:  String(formData.get("room_number") || "") || null,
+      address:      String(formData.get("address") || "") || null,
     });
     if (error) redirect(`/residents/new?error=${encodeURIComponent(error.message)}`);
     redirect("/residents");
@@ -37,7 +38,7 @@ export default async function NewResidentPage({ searchParams }: { searchParams: 
   return (
     <div className="max-w-2xl">
       <Link href="/residents" className="text-blue-600 hover:underline text-sm">← Back to Residents</Link>
-      <h1 className="text-4xl font-bold my-6">Add Resident</h1>
+      <h1 className="text-4xl font-bold my-6">Add Resident / Client</h1>
 
       {pageError && <div className="mb-4 rounded-lg bg-red-100 border border-red-200 p-3 text-sm text-red-700">{pageError}</div>}
       <form action={saveResident} className="bg-white p-6 rounded-xl shadow space-y-5">
@@ -65,6 +66,12 @@ export default async function NewResidentPage({ searchParams }: { searchParams: 
             <input type="text" name="room_number" placeholder="e.g. 101" className={inp} />
           </div>
         </div>
+        <div>
+          <label className="block mb-1.5 font-medium text-slate-700">Client Address</label>
+          <input type="text" name="address" placeholder="e.g. 123 Main St, Seattle, WA 98101" className={inp} />
+          <p className="mt-1.5 text-xs text-slate-400">Shown to caregivers on clock-in. Enables GPS location verification.</p>
+        </div>
+
         <div className="flex gap-3 pt-2">
           <button type="submit" className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700">
             Save Resident

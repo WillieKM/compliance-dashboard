@@ -119,13 +119,14 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
       clock_in_time: `${noteDate}T00:00:00Z`,
       status: "completed",
       notes: `[${noteType}] ${notes}`,
-    }).select().single();
-    if (visit?.data?.id) {
+    }).select("id").single();
+    if (visit?.id) {
       await db.from("visit_service_reports").insert({
-        visit_id: visit.data.id,
+        visit_id: visit.id,
         facility_id: facilityId,
         caregiver_notes: notes,
         adl_checklist: [],
+        submitted_at: new Date().toISOString(),
       });
     }
     return NextResponse.json({ ok: true });

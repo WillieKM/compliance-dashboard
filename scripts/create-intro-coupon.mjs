@@ -22,8 +22,9 @@ const REGULAR_PLANS = [
 console.log("Creating regular (year 2+) prices...\n");
 
 for (const plan of REGULAR_PLANS) {
-  const existing = await stripe.products.search({ query: `name:'${plan.name}'` });
-  const productId = existing.data[0]?.id;
+  const existing = await stripe.products.list({ limit: 100 });
+  const product = existing.data.find(p => p.name === plan.name && p.active);
+  const productId = product?.id;
   if (!productId) { console.log(`Product not found: ${plan.name}`); continue; }
 
   const price = await stripe.prices.create({
@@ -37,18 +38,26 @@ for (const plan of REGULAR_PLANS) {
   console.log(`${plan.setting} regular: $${(plan.price / 100).toFixed(2)}/mo → ${price.id}`);
 }
 
-// Step 2: Create the $20-off intro coupon (12 months)
+// Step 2: Create the $20-off intro coupon (12 months) if not already exists
 console.log("\nCreating $20-off introductory coupon (12 months)...");
-const coupon = await stripe.coupons.create({
-  id:                  "INTRO_YEAR_1",
-  name:                "First Year Introductory Rate",
-  amount_off:          2000,  // $20.00 off
-  currency:            "usd",
-  duration:            "repeating",
-  duration_in_months:  12,
-  metadata:            { purpose: "first_year_discount" },
-});
-console.log(`Coupon created: ${coupon.id} — $20 off for 12 months`);
+try {
+  const coupon = await stripe.coupons.create({
+    id:                  "INTRO_YEAR_1",
+    name:                "First Year Introductory Rate",
+    amount_off:          2000,
+    currency:            "usd",
+    duration:            "repeating",
+    duration_in_months:  12,
+    metadata:            { purpose: "first_year_discount" },
+  });
+  console.log(`Coupon created: ${coupon.id} — $20 off for 12 months`);
+} catch (e) {
+  if (e.code === "resource_already_exists") {
+    console.log("Coupon INTRO_YEAR_1 already exists — skipping.");
+  } else {
+    throw e;
+  }
+}
 
 console.log("\n=== ADD TO VERCEL ENV VARS ===");
 console.log("STRIPE_COUPON_INTRO_YEAR=INTRO_YEAR_1");

@@ -17,7 +17,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ slug: s
 
   const { data: residents } = await db
     .from("residents")
-    .select("id, first_name, last_name")
+    .select("id, first_name, last_name, address")
     .eq("facility_id", org.id)
     .order("first_name");
 
