@@ -12,11 +12,12 @@ const ALL_DASHBOARDS = [
 const navItems = [
   { label: "Overview",   href: "/dashboard" },
   { label: "Caregivers", href: "/staff" },
+  { label: "Shifts",     href: "/shifts" },
   { label: "Residents",  href: "/residents" },
   { label: "Documents",  href: "/documents" },
   { label: "Alerts",     href: "/alerts" },
   { label: "Checklist",  href: "/checklist" },
-  { label: "Billing", href: "/billing" },
+  { label: "Billing",    href: "/billing" },
 ];
 
 export default async function Sidebar() {

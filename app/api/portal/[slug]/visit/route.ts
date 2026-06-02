@@ -32,7 +32,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
 
   // ── Clock In ──────────────────────────────────────────────────────
   if (action === "clock_in") {
-    const { caregiverName, clientName, staffId, residentId, lat, lng } = body;
+    const { caregiverName, clientName, staffId, residentId, lat, lng, shiftId } = body;
 
     // Geo-fence: check if caregiver is within 0.5 miles of client's address (if resident has coordinates)
     let geoWarning = null;
@@ -56,6 +56,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
       clock_in_lat: lat ?? null,
       clock_in_lng: lng ?? null,
       status: "active",
+      shift_id: shiftId || null,
       notes: geoWarning ? `[GEO WARNING] ${geoWarning}` : null,
     }).select().single();
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
@@ -85,7 +86,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
   if (action === "submit_report") {
     const { visitId, mood, behaviorChanges, cooperationLevel, morningRoutine,
       mealPrep, carePlanChanges, painLevel, fallOccurred, incidentOccurred,
-      incidentDesc, adlChecklist, caregiverNotes } = body;
+      incidentDesc, adlChecklist, caregiverNotes, shiftId } = body;
     const { error } = await db.from("visit_service_reports").insert({
       visit_id: visitId,
       facility_id: facilityId,
@@ -103,6 +104,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
       caregiver_notes: caregiverNotes,
     });
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    // Mark the linked shift as completed
+    if (shiftId) {
+      await db.from("shifts").update({ status: "completed" }).eq("id", shiftId).eq("status", "accepted");
+    }
     return NextResponse.json({ ok: true });
   }
 
