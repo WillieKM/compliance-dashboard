@@ -19,7 +19,7 @@ export default async function WelcomeLetterPage({ params }: { params: Promise<{ 
 
   const db = admin();
   const [staffRes, orgRes] = await Promise.all([
-    db.from("staff").select("id, first_name, last_name, role, email, phone, tax_withholding, created_at").eq("id", id).maybeSingle(),
+    db.from("staff").select("id, first_name, last_name, role, email, phone, tax_withholding, onboarding_token, created_at").eq("id", id).maybeSingle(),
     db.from("organizations").select("name, logo_url, primary_color, tagline").eq("id", profile.facility_id).maybeSingle(),
   ]);
 
@@ -129,6 +129,25 @@ export default async function WelcomeLetterPage({ params }: { params: Promise<{ 
               {staff.phone && <p>Phone: {staff.phone}</p>}
             </div>
           )}
+
+          {/* Document upload section */}
+          {staff.onboarding_token && (() => {
+            const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "";
+            const uploadUrl = `${appUrl}/staff-onboarding/${staff.onboarding_token}`;
+            return (
+              <div className="rounded-xl border-2 border-blue-200 bg-blue-50 p-5 print:hidden">
+                <p className="font-bold text-blue-900 mb-2">📎 Next Step: Upload Your Documents</p>
+                <p className="text-sm text-blue-800 mb-3">
+                  Before your first shift, please upload your required documents (ID, TB test, CPR certificate, HCA certificate, etc.) using the secure link below. No login required.
+                </p>
+                <a href={uploadUrl} target="_blank" rel="noreferrer"
+                  className="inline-block rounded-lg bg-blue-600 text-white px-5 py-2.5 font-semibold text-sm hover:bg-blue-700">
+                  Upload My Documents →
+                </a>
+                <p className="text-xs text-blue-600 mt-2">A copy of this link was also sent to {staff.email || "your email"}.</p>
+              </div>
+            );
+          })()}
 
           <p>
             If you have any questions about your employment arrangement, please contact your supervisor or the agency administrator.

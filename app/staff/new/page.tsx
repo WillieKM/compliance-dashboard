@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getCurrentProfile } from "@/lib/auth/getCurrentProfile";
 import { createClient } from "@supabase/supabase-js";
+import { sendStaffOnboardingEmail } from "@/lib/email";
 
 function admin() {
   return createClient(
@@ -21,17 +22,40 @@ export default async function NewStaffPage({ searchParams }: { searchParams: Pro
     "use server";
     const p = await getCurrentProfile();
     if (!p) redirect("/login");
-    const { data, error } = await admin().from("staff").insert({
-      facility_id:    p.facility_id,
-      first_name:     String(formData.get("first_name") || ""),
-      last_name:      String(formData.get("last_name") || ""),
-      role:           String(formData.get("role") || "") || null,
-      email:          String(formData.get("email") || "") || null,
-      phone:          String(formData.get("phone") || "") || null,
-      status:         "active",
+    const db = admin();
+    const emailVal = String(formData.get("email") || "") || null;
+
+    const { data, error } = await db.from("staff").insert({
+      facility_id:     p.facility_id,
+      first_name:      String(formData.get("first_name") || ""),
+      last_name:       String(formData.get("last_name") || ""),
+      role:            String(formData.get("role") || "") || null,
+      email:           emailVal,
+      phone:           String(formData.get("phone") || "") || null,
+      status:          "active",
       tax_withholding: String(formData.get("tax_withholding") || "W2"),
-    }).select("id").single();
+    }).select("id, first_name, last_name, onboarding_token").single();
     if (error) redirect(`/staff/new?error=${encodeURIComponent(error.message)}`);
+
+    if (emailVal && data.onboarding_token) {
+      const [orgRes] = await Promise.all([
+        db.from("organizations").select("name, primary_color").eq("id", p.facility_id).maybeSingle(),
+      ]);
+      const org = orgRes.data;
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+      try {
+        await sendStaffOnboardingEmail({
+          to:          emailVal,
+          staffName:   `${data.first_name} ${data.last_name}`,
+          agencyName:  org?.name ?? "Your Agency",
+          agencyColor: org?.primary_color ?? "#1a3a52",
+          uploadUrl:   `${appUrl}/staff-onboarding/${data.onboarding_token}`,
+        });
+      } catch (e) {
+        console.error("Onboarding email failed:", e);
+      }
+    }
+
     redirect(`/staff/${data.id}/welcome-letter`);
   }
 
