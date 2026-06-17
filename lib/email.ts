@@ -1,21 +1,46 @@
 import nodemailer from "nodemailer";
 
+export type SmtpConfig = {
+  smtp_host?: string | null;
+  smtp_port?: number | null;
+  smtp_user?: string | null;
+  smtp_pass?: string | null;
+  smtp_from_name?: string | null;
+  smtp_from_email?: string | null;
+};
+
 function fmt12h(time: string): string {
   const [h, m] = time.split(":").map(Number);
   return `${h % 12 || 12}:${m.toString().padStart(2, "0")} ${h >= 12 ? "PM" : "AM"}`;
 }
 
-function mailer() {
-  if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) return null;
-  return nodemailer.createTransport({
-    service: "gmail",
-    auth: { user: process.env.GMAIL_USER, pass: process.env.GMAIL_APP_PASSWORD },
-  });
+function createMailer(smtpConfig?: SmtpConfig): nodemailer.Transporter | null {
+  if (smtpConfig?.smtp_host && smtpConfig.smtp_user && smtpConfig.smtp_pass) {
+    return nodemailer.createTransport({
+      host:   smtpConfig.smtp_host,
+      port:   smtpConfig.smtp_port ?? 587,
+      secure: (smtpConfig.smtp_port ?? 587) === 465,
+      auth:   { user: smtpConfig.smtp_user, pass: smtpConfig.smtp_pass },
+    });
+  }
+  if (process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD) {
+    return nodemailer.createTransport({
+      service: "gmail",
+      auth: { user: process.env.GMAIL_USER, pass: process.env.GMAIL_APP_PASSWORD },
+    });
+  }
+  return null;
 }
 
-function send(to: string, subject: string, html: string, from: string) {
-  const t = mailer();
-  if (!t) { console.warn("Email skipped — GMAIL_USER / GMAIL_APP_PASSWORD not set"); return Promise.resolve(); }
+function getFromAddress(agencyName: string, smtpConfig?: SmtpConfig): string {
+  const fromName  = smtpConfig?.smtp_from_name ?? agencyName;
+  const fromEmail = smtpConfig?.smtp_from_email ?? smtpConfig?.smtp_user ?? process.env.GMAIL_USER ?? "";
+  return `"${fromName}" <${fromEmail}>`;
+}
+
+function send(to: string, subject: string, html: string, from: string, smtpConfig?: SmtpConfig) {
+  const t = createMailer(smtpConfig);
+  if (!t) { console.warn("Email skipped — no SMTP credentials configured"); return Promise.resolve(); }
   return t.sendMail({ from, to, subject, html });
 }
 
@@ -33,13 +58,14 @@ export interface ShiftEmailData {
   clientAddress?: string | null;
   notes?: string | null;
   respondUrl: string;
+  smtpConfig?: SmtpConfig;
 }
 
 export async function sendShiftAssignmentEmail(data: ShiftEmailData) {
   const dateLabel = new Date(`${data.shiftDate}T12:00:00`).toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
   const timeLabel = `${fmt12h(data.startTime)}${data.endTime ? ` – ${fmt12h(data.endTime)}` : ""}`;
-  const from = `"${data.agencyName}" <${process.env.GMAIL_USER}>`;
-  await send(data.to, `New Shift: ${data.clientName} · ${dateLabel}`, buildShiftHtml({ ...data, dateLabel, timeLabel }), from);
+  const from = getFromAddress(data.agencyName, data.smtpConfig);
+  await send(data.to, `New Shift: ${data.clientName} · ${dateLabel}`, buildShiftHtml({ ...data, dateLabel, timeLabel }), from, data.smtpConfig);
 }
 
 function buildShiftHtml(d: ShiftEmailData & { dateLabel: string; timeLabel: string }): string {
@@ -62,37 +88,40 @@ function buildShiftHtml(d: ShiftEmailData & { dateLabel: string; timeLabel: stri
 export async function sendClockInReminderEmail(opts: {
   to: string; caregiverName: string; agencyName: string; agencyColor: string;
   clientName: string; clientAddress: string | null; shiftTime: string; clockInUrl: string;
+  smtpConfig?: SmtpConfig;
 }) {
-  const from = `"${opts.agencyName}" <${process.env.GMAIL_USER}>`;
+  const from = getFromAddress(opts.agencyName, opts.smtpConfig);
   await send(opts.to, `⏰ Reminder: Clock in for your shift at ${opts.shiftTime}`,
     wrap(opts.agencyColor, opts.agencyName, "Clock-In Reminder",
       `<p style="font-size:16px;color:#475569;">Hi <strong>${opts.caregiverName}</strong>,</p>
        <p style="font-size:15px;color:#475569;">Your shift starts at <strong>${opts.shiftTime}</strong>. Don't forget to clock in!</p>
        ${opts.clientAddress ? `<div style="background:#eff6ff;border-radius:10px;padding:14px 18px;margin:16px 0;"><p style="margin:0;font-size:13px;font-weight:600;color:#1d4ed8;">📍 Clock in at this address</p><p style="margin:6px 0 0;font-size:15px;color:#1e293b;font-weight:600;">${opts.clientAddress}</p></div>` : ""}
        <div style="margin-top:24px;text-align:center;"><a href="${opts.clockInUrl}" style="display:inline-block;background:${opts.agencyColor};color:white;padding:15px 36px;border-radius:10px;font-weight:700;font-size:16px;text-decoration:none;">🟢 Go to Clock-In →</a></div>`
-    ), from);
+    ), from, opts.smtpConfig);
 }
 
 export async function sendClockOutReminderEmail(opts: {
   to: string; caregiverName: string; agencyName: string; agencyColor: string;
   clientName: string; shiftTime: string; clockInUrl: string;
+  smtpConfig?: SmtpConfig;
 }) {
-  const from = `"${opts.agencyName}" <${process.env.GMAIL_USER}>`;
+  const from = getFromAddress(opts.agencyName, opts.smtpConfig);
   await send(opts.to, `⏰ Reminder: Don't forget to clock out`,
     wrap(opts.agencyColor, opts.agencyName, "Clock-Out Reminder",
       `<p style="font-size:16px;color:#475569;">Hi <strong>${opts.caregiverName}</strong>,</p>
        <p style="font-size:15px;color:#475569;">Your shift for <strong>${opts.clientName}</strong> ended at <strong>${opts.shiftTime}</strong>. Please clock out and submit your service report.</p>
        <div style="margin-top:24px;text-align:center;"><a href="${opts.clockInUrl}" style="display:inline-block;background:#dc2626;color:white;padding:15px 36px;border-radius:10px;font-weight:700;font-size:16px;text-decoration:none;">🔴 Clock Out Now →</a></div>
        <p style="text-align:center;margin-top:12px;font-size:13px;color:#94a3b8;">Clocking out accurately ensures you are paid correctly for your time.</p>`
-    ), from);
+    ), from, opts.smtpConfig);
 }
 
 // ─── Staff Onboarding ─────────────────────────────────────────────────────────
 
 export async function sendStaffOnboardingEmail(opts: {
   to: string; staffName: string; agencyName: string; agencyColor: string; uploadUrl: string;
+  smtpConfig?: SmtpConfig;
 }) {
-  const from = `"${opts.agencyName}" <${process.env.GMAIL_USER}>`;
+  const from = getFromAddress(opts.agencyName, opts.smtpConfig);
   await send(opts.to, `Action Required: Upload Your Documents — ${opts.agencyName}`,
     wrap(opts.agencyColor, opts.agencyName, "Welcome — Please Upload Your Documents",
       `<p style="font-size:16px;color:#475569;">Hi <strong>${opts.staffName}</strong>,</p>
@@ -112,7 +141,7 @@ export async function sendStaffOnboardingEmail(opts: {
        <p style="font-size:14px;color:#64748b;">The upload link is unique to you — no account or login required. You can return to it anytime to upload additional documents.</p>
        <div style="margin-top:24px;text-align:center;"><a href="${opts.uploadUrl}" style="display:inline-block;background:${opts.agencyColor};color:white;padding:15px 36px;border-radius:10px;font-weight:700;font-size:16px;text-decoration:none;">📎 Upload My Documents →</a></div>
        <p style="text-align:center;margin-top:12px;font-size:12px;color:#94a3b8;">This link is unique to you. Do not share it with others.</p>`
-    ), from);
+    ), from, opts.smtpConfig);
 }
 
 // ─── Shared HTML wrapper ──────────────────────────────────────────────────────

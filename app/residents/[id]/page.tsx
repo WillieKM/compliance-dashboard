@@ -109,9 +109,24 @@ export default async function ResidentProfilePage({
       </div>
 
       <div className="bg-white rounded-xl shadow p-6 mb-6">
-        <h1 className="text-4xl font-bold">
-          {resident.first_name} {resident.last_name}
-        </h1>
+        <div className="flex items-start gap-5 mb-4">
+          {resident.photo_url ? (
+            <img src={resident.photo_url} alt={`${resident.first_name} ${resident.last_name}`}
+              className="h-20 w-20 rounded-xl object-cover border-2 border-slate-200 shrink-0" />
+          ) : (
+            <div className="h-20 w-20 rounded-xl bg-blue-50 border-2 border-dashed border-blue-200 flex items-center justify-center text-2xl font-bold text-blue-400 shrink-0">
+              {resident.first_name?.[0]}{resident.last_name?.[0]}
+            </div>
+          )}
+          <div>
+            <h1 className="text-4xl font-bold">
+              {resident.first_name} {resident.last_name}
+            </h1>
+            {resident.address && (
+              <p className="text-sm text-slate-500 mt-1">📍 {resident.address}</p>
+            )}
+          </div>
+        </div>
 
         <div className="mt-4 grid grid-cols-1 md:grid-cols-6 gap-4">
           <div>

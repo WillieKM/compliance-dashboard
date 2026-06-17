@@ -21,13 +21,29 @@ export default async function NewResidentPage({ searchParams }: { searchParams: 
     "use server";
     const p = await getCurrentProfile();
     if (!p) redirect("/login");
-    const { error } = await admin().from("residents").insert({
+    const db = admin();
+
+    // Handle optional photo upload
+    const photoFile = formData.get("photo") as File | null;
+    let photoUrl: string | null = null;
+    if (photoFile && photoFile.size > 0) {
+      const safeName = photoFile.name.replace(/[^a-zA-Z0-9._-]/g, "-");
+      const filePath = `${p.facility_id}/resident-photos/${Date.now()}-${safeName}`;
+      const { error: uploadErr } = await db.storage.from("documents").upload(filePath, photoFile, { upsert: false });
+      if (!uploadErr) {
+        const { data: urlData } = db.storage.from("documents").getPublicUrl(filePath);
+        photoUrl = urlData.publicUrl;
+      }
+    }
+
+    const { error } = await db.from("residents").insert({
       facility_id:  p.facility_id,
       first_name:   String(formData.get("first_name") || ""),
       last_name:    String(formData.get("last_name") || ""),
       status:       String(formData.get("status") || "Active"),
       room_number:  String(formData.get("room_number") || "") || null,
       address:      String(formData.get("address") || "") || null,
+      photo_url:    photoUrl,
     });
     if (error) redirect(`/residents/new?error=${encodeURIComponent(error.message)}`);
     redirect("/residents");
@@ -41,7 +57,15 @@ export default async function NewResidentPage({ searchParams }: { searchParams: 
       <h1 className="text-4xl font-bold my-6">Add Resident / Client</h1>
 
       {pageError && <div className="mb-4 rounded-lg bg-red-100 border border-red-200 p-3 text-sm text-red-700">{pageError}</div>}
-      <form action={saveResident} className="bg-white p-6 rounded-xl shadow space-y-5">
+      <form action={saveResident} className="bg-white p-6 rounded-xl shadow space-y-5" encType="multipart/form-data">
+
+        {/* Photo upload */}
+        <div>
+          <label className="block mb-1.5 font-medium text-slate-700">Client Photo (optional)</label>
+          <input type="file" name="photo" accept="image/*" className="w-full text-sm text-slate-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+          <p className="mt-1 text-xs text-slate-400">Helps caregivers identify the client on clock-in. Recommended: clear face photo.</p>
+        </div>
+
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block mb-1.5 font-medium text-slate-700">First Name *</label>

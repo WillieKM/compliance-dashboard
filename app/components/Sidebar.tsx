@@ -104,6 +104,9 @@ export default async function Sidebar() {
           <Link href="/settings/account" className="block rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-slate-50 hover:text-slate-900 transition-colors">
             👤 Account Settings
           </Link>
+          <Link href="/settings/email" className="block rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-slate-50 hover:text-slate-900 transition-colors">
+            ✉ Email Settings
+          </Link>
           {/* Invite Codes — super admin only */}
           {isSuperAdmin && (
             <Link href="/admin/invites" className="block rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-slate-50 hover:text-slate-900 transition-colors">

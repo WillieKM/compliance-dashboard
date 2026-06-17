@@ -9,7 +9,6 @@ INSERT INTO document_types (name, category, applies_to) VALUES
   ('OASIS Assessment',              'Home Care',        'resident'),
   ('Plan of Care',                  'Home Care',        'resident'),
   ('Face-to-Face Encounter',        'Home Care',        'resident'),
-  ('Physician Orders',              'Home Care',        'resident'),
   ('Visit Notes',                   'Home Care',        'resident'),
   ('Discharge Summary',             'Home Care',        'resident'),
 

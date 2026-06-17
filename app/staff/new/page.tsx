@@ -25,6 +25,19 @@ export default async function NewStaffPage({ searchParams }: { searchParams: Pro
     const db = admin();
     const emailVal = String(formData.get("email") || "") || null;
 
+    // Handle optional photo upload
+    const photoFile = formData.get("photo") as File | null;
+    let photoUrl: string | null = null;
+    if (photoFile && photoFile.size > 0) {
+      const safeName = photoFile.name.replace(/[^a-zA-Z0-9._-]/g, "-");
+      const filePath = `${p.facility_id}/staff-photos/${Date.now()}-${safeName}`;
+      const { error: uploadErr } = await db.storage.from("documents").upload(filePath, photoFile, { upsert: false });
+      if (!uploadErr) {
+        const { data: urlData } = db.storage.from("documents").getPublicUrl(filePath);
+        photoUrl = urlData.publicUrl;
+      }
+    }
+
     const { data, error } = await db.from("staff").insert({
       facility_id:     p.facility_id,
       first_name:      String(formData.get("first_name") || ""),
@@ -34,13 +47,12 @@ export default async function NewStaffPage({ searchParams }: { searchParams: Pro
       phone:           String(formData.get("phone") || "") || null,
       status:          "active",
       tax_withholding: String(formData.get("tax_withholding") || "W2"),
+      photo_url:       photoUrl,
     }).select("id, first_name, last_name, onboarding_token").single();
     if (error) redirect(`/staff/new?error=${encodeURIComponent(error.message)}`);
 
     if (emailVal && data.onboarding_token) {
-      const [orgRes] = await Promise.all([
-        db.from("organizations").select("name, primary_color").eq("id", p.facility_id).maybeSingle(),
-      ]);
+      const orgRes = await db.from("organizations").select("name, primary_color").eq("id", p.facility_id).maybeSingle();
       const org = orgRes.data;
       const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
       try {
@@ -67,7 +79,15 @@ export default async function NewStaffPage({ searchParams }: { searchParams: Pro
       <h1 className="text-4xl font-bold my-6">Add Staff Member</h1>
       {pageError && <div className="mb-4 rounded-lg bg-red-100 border border-red-200 p-3 text-sm text-red-700">{pageError}</div>}
       <div className="bg-white rounded-xl shadow p-6 max-w-2xl">
-        <form action={createStaff} className="space-y-5">
+        <form action={createStaff} className="space-y-5" encType="multipart/form-data">
+
+          {/* Photo upload */}
+          <div>
+            <label className="block mb-1.5 font-medium text-slate-700">Staff Photo (optional)</label>
+            <input type="file" name="photo" accept="image/*" className="w-full text-sm text-slate-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+            <p className="mt-1 text-xs text-slate-400">Photo will appear on staff list and profile. Recommended: square image.</p>
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block mb-1.5 font-medium text-slate-700">First Name *</label>
@@ -96,12 +116,7 @@ export default async function NewStaffPage({ searchParams }: { searchParams: Pro
           {/* Tax Withholding */}
           <div>
             <label className="block mb-1.5 font-medium text-slate-700">Tax Withholding Preference</label>
-            <select
-              name="tax_withholding"
-              id="tax_select"
-              defaultValue="W2"
-              className={inp}
-            >
+            <select name="tax_withholding" id="tax_select" defaultValue="W2" className={inp}>
               <option value="W2">W-2 Employee — taxes withheld by employer</option>
               <option value="1099">1099 Independent Contractor — I pay my own taxes</option>
             </select>

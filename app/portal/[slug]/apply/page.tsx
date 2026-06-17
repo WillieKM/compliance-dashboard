@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 
@@ -17,23 +17,26 @@ type OrgBrand = { name: string; primary_color: string | null; logo_url: string |
 
 export default function BrandedApplyPage() {
   const { slug } = useParams<{ slug: string }>();
-  const [org, setOrg]       = useState<OrgBrand | null>(null);
+  const [org, setOrg]         = useState<OrgBrand | null>(null);
   const [loading, setLoading] = useState(false);
-  const [done, setDone]     = useState(false);
-  const [error, setError]   = useState<string | null>(null);
+  const [done, setDone]       = useState(false);
+  const [error, setError]     = useState<string | null>(null);
 
   // Form state
-  const [firstName, setFirstName]             = useState("");
-  const [lastName, setLastName]               = useState("");
-  const [email, setEmail]                     = useState("");
-  const [phone, setPhone]                     = useState("");
-  const [role, setRole]                       = useState("");
+  const [firstName, setFirstName]               = useState("");
+  const [lastName, setLastName]                 = useState("");
+  const [email, setEmail]                       = useState("");
+  const [phone, setPhone]                       = useState("");
+  const [role, setRole]                         = useState("");
   const [previousEmployer, setPreviousEmployer] = useState("");
-  const [yearsExperience, setYearsExperience] = useState("");
-  const [certifications, setCertifications]   = useState("");
-  const [startDate, setStartDate]             = useState("");
-  const [availability, setAvailability]       = useState<string[]>([]);
-  const [notes, setNotes]                     = useState("");
+  const [yearsExperience, setYearsExperience]   = useState("");
+  const [certifications, setCertifications]     = useState("");
+  const [startDate, setStartDate]               = useState("");
+  const [availability, setAvailability]         = useState<string[]>([]);
+  const [notes, setNotes]                       = useState("");
+  const [photoFile, setPhotoFile]               = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview]         = useState<string | null>(null);
+  const photoRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetch(`/api/portal/${slug}/org`)
@@ -46,6 +49,18 @@ export default function BrandedApplyPage() {
     setAvailability(prev => prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day]);
   }
 
+  function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0] ?? null;
+    setPhotoFile(file);
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = ev => setPhotoPreview(ev.target?.result as string);
+      reader.readAsDataURL(file);
+    } else {
+      setPhotoPreview(null);
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!firstName || !lastName || !email || !role) {
@@ -55,16 +70,21 @@ export default function BrandedApplyPage() {
     setLoading(true);
     setError(null);
 
-    const res = await fetch(`/api/portal/${slug}/apply`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        firstName, lastName, email, phone, role,
-        previousEmployer, yearsExperience, certifications,
-        startDate, availability: availability.join(", "), notes,
-      }),
-    });
+    const fd = new FormData();
+    fd.append("firstName", firstName);
+    fd.append("lastName", lastName);
+    fd.append("email", email);
+    fd.append("phone", phone);
+    fd.append("role", role);
+    fd.append("previousEmployer", previousEmployer);
+    fd.append("yearsExperience", yearsExperience);
+    fd.append("certifications", certifications);
+    fd.append("startDate", startDate);
+    fd.append("availability", availability.join(", "));
+    fd.append("notes", notes);
+    if (photoFile) fd.append("photo", photoFile);
 
+    const res = await fetch(`/api/portal/${slug}/apply`, { method: "POST", body: fd });
     const data = await res.json();
     if (data.error) { setError(data.error); setLoading(false); return; }
     setDone(true);
@@ -126,6 +146,32 @@ export default function BrandedApplyPage() {
         <form onSubmit={handleSubmit} className="space-y-6">
           {error && <div className="rounded-xl bg-red-50 border border-red-200 p-3 text-sm text-red-700">{error}</div>}
 
+          {/* Photo upload */}
+          <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
+            <h3 className="font-bold text-slate-900 border-b border-slate-100 pb-3">Your Photo</h3>
+            <div className="flex items-center gap-5">
+              {photoPreview ? (
+                <img src={photoPreview} alt="Preview" className="h-20 w-20 rounded-xl object-cover border-2 border-slate-200 shrink-0" />
+              ) : (
+                <div className="h-20 w-20 rounded-xl bg-slate-100 border-2 border-dashed border-slate-300 flex items-center justify-center text-3xl text-slate-300 shrink-0">
+                  👤
+                </div>
+              )}
+              <div className="flex-1">
+                <input ref={photoRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoChange} />
+                <button type="button" onClick={() => photoRef.current?.click()}
+                  className="px-4 py-2 rounded-lg border border-slate-300 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                  {photoFile ? "Change Photo" : "Upload Photo"}
+                </button>
+                {photoFile && (
+                  <button type="button" onClick={() => { setPhotoFile(null); setPhotoPreview(null); if (photoRef.current) photoRef.current.value = ""; }}
+                    className="ml-2 text-sm text-red-500 hover:text-red-700">Remove</button>
+                )}
+                <p className="text-xs text-slate-400 mt-1.5">Optional but recommended. Helps the agency identify you. Clear face photo preferred.</p>
+              </div>
+            </div>
+          </div>
+
           {/* Personal Info */}
           <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
             <h3 className="font-bold text-slate-900 border-b border-slate-100 pb-3">Personal Information</h3>
@@ -150,7 +196,7 @@ export default function BrandedApplyPage() {
 
           {/* Work History */}
           <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
-            <h3 className="font-bold text-slate-900 border-b border-slate-100 pb-3">Work History & Experience</h3>
+            <h3 className="font-bold text-slate-900 border-b border-slate-100 pb-3">Work History &amp; Experience</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div><label className="block text-sm font-semibold text-slate-700 mb-1.5">Previous Employer</label>
                 <input type="text" value={previousEmployer} onChange={e=>setPreviousEmployer(e.target.value)} placeholder="Sunrise Home Care" className={inp} /></div>
