@@ -29,12 +29,21 @@ export default function StaffOnboardingPage() {
   const [expDates, setExpDates] = useState<Record<string, string>>({});
   const fileRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
+  const [notifyState, setNotifyState] = useState<"idle" | "sending" | "sent" | "error">("idle");
+  const notifiedRef = useRef(false);
+
   useEffect(() => {
     fetch(`/api/staff-onboarding/${token}`)
       .then(r => r.ok ? r.json() : null)
       .then(d => { if (d) { setData(d); setUploaded(d.uploaded); } else setNotFound(true); })
       .catch(() => setNotFound(true));
   }, [token]);
+
+  async function notifySupervisor() {
+    setNotifyState("sending");
+    const res = await fetch(`/api/staff-onboarding/${token}/complete`, { method: "POST" });
+    setNotifyState(res.ok ? "sent" : "error");
+  }
 
   async function handleUpload(docTypeId: string) {
     const input = fileRefs.current[docTypeId];
@@ -58,7 +67,16 @@ export default function StaffOnboardingPage() {
       setErrors(e => ({ ...e, [docTypeId]: json.error }));
     } else {
       setStates(s => ({ ...s, [docTypeId]: "done" }));
-      setUploaded(prev => [...prev.filter(u => u.document_type_id !== docTypeId), json]);
+      setUploaded(prev => {
+        const next = [...prev.filter(u => u.document_type_id !== docTypeId), json];
+        // Auto-notify admin the first time all docs are uploaded
+        if (data && next.length >= data.docTypes.length && !notifiedRef.current) {
+          notifiedRef.current = true;
+          fetch(`/api/staff-onboarding/${token}/complete`, { method: "POST" }).catch(() => {});
+          setNotifyState("sent");
+        }
+        return next;
+      });
       if (input) input.value = "";
     }
   }
@@ -127,7 +145,23 @@ export default function StaffOnboardingPage() {
             <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, backgroundColor: color }} />
           </div>
           {pct === 100 && (
-            <p className="text-emerald-700 text-sm font-semibold mt-2 text-center">✅ All documents uploaded! Your supervisor has been notified.</p>
+            <div className="mt-3 text-center">
+              {notifyState === "sent" ? (
+                <p className="text-emerald-700 text-sm font-semibold">✅ All documents uploaded! Your supervisor has been notified.</p>
+              ) : (
+                <button
+                  onClick={notifySupervisor}
+                  disabled={notifyState === "sending"}
+                  className="w-full rounded-xl py-3 font-bold text-sm text-white disabled:opacity-60"
+                  style={{ backgroundColor: color }}
+                >
+                  {notifyState === "sending" ? "Notifying…" : "✅ I'm Done — Notify My Supervisor"}
+                </button>
+              )}
+              {notifyState === "error" && (
+                <p className="text-red-600 text-xs mt-1">Notification failed — please contact your supervisor directly.</p>
+              )}
+            </div>
           )}
         </div>
 

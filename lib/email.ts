@@ -203,6 +203,41 @@ export async function sendWelcomeLetterEmail(opts: {
   );
 }
 
+// ─── Admin: Documents Complete ────────────────────────────────────────────────
+
+export async function sendDocumentsCompleteEmail(opts: {
+  to: string;
+  staffName: string;
+  agencyName: string;
+  agencyColor: string;
+  uploadedDocs: { name: string }[];
+  profileUrl: string;
+  smtpConfig?: SmtpConfig;
+}) {
+  const from = getFromAddress(opts.agencyName, opts.smtpConfig);
+  const docList = opts.uploadedDocs
+    .map(d => `<li style="padding:3px 0;font-size:14px;color:#1e293b;">${d.name}</li>`)
+    .join("");
+
+  await send(
+    opts.to,
+    `📎 ${opts.staffName} has finished uploading documents — ${opts.agencyName}`,
+    wrap(opts.agencyColor, opts.agencyName, `${opts.staffName} Uploaded Their Documents`,
+      `<p style="font-size:15px;color:#475569;"><strong>${opts.staffName}</strong> has completed their document upload and marked it as done.</p>
+       ${docList ? `<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px 18px;margin:16px 0;">
+         <p style="margin:0 0 8px;font-size:13px;font-weight:600;color:#475569;text-transform:uppercase;letter-spacing:.05em;">Documents uploaded</p>
+         <ul style="margin:0;padding-left:18px;">${docList}</ul>
+       </div>` : ""}
+       <p style="font-size:14px;color:#475569;">Please review their profile to verify the documents meet your requirements.</p>
+       <div style="margin-top:24px;text-align:center;">
+         <a href="${opts.profileUrl}" style="display:inline-block;background:${opts.agencyColor};color:white;padding:14px 32px;border-radius:10px;font-weight:700;font-size:15px;text-decoration:none;">View Staff Profile →</a>
+       </div>`
+    ),
+    from,
+    opts.smtpConfig,
+  );
+}
+
 // ─── Shared HTML wrapper ──────────────────────────────────────────────────────
 
 function wrap(color: string, agency: string, title: string, body: string): string {
