@@ -48,6 +48,7 @@ export default async function NewStaffPage({ searchParams }: { searchParams: Pro
       status:          "active",
       tax_withholding: String(formData.get("tax_withholding") || "W2"),
       photo_url:       photoUrl,
+      signing_token:   crypto.randomUUID(),
     }).select("id, first_name, last_name, onboarding_token").single();
     if (error) redirect(`/staff/new?error=${encodeURIComponent(error.message)}`);
 

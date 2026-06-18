@@ -102,9 +102,13 @@ export default async function ResidentProfilePage({
 
   return (
     <div>
-      <div className="mb-6">
+      <div className="mb-6 flex items-center justify-between">
         <Link href="/residents" className="text-blue-600 hover:underline">
           ← Back to Residents
+        </Link>
+        <Link href={`/residents/${resident.id}/edit`}
+          className="px-4 py-2 rounded-lg border border-slate-300 text-slate-700 text-sm font-semibold hover:bg-slate-50">
+          ✏ Edit Client
         </Link>
       </div>
 

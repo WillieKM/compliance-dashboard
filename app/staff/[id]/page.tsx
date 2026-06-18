@@ -5,6 +5,7 @@ import {
   summarizeChecklist,
 } from "@/lib/compliance/getComplianceChecklist";
 import DeleteStaffButton from "./DeleteStaffButton";
+import ActivateStaffButton from "./ActivateStaffButton";
 
 function admin() {
   return createClient(
@@ -71,9 +72,15 @@ export default async function StaffProfilePage({ params }: { params: Promise<{ i
 
   return (
     <div className="max-w-7xl mx-auto space-y-6 p-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <Link href="/staff" className="text-blue-600 hover:underline text-sm">← Back to Staff</Link>
-        <DeleteStaffButton staffId={id} staffName={fullName} />
+        <div className="flex items-center gap-2 flex-wrap">
+          <Link href={`/staff/${id}/edit`}
+            className="px-4 py-2 rounded-lg border border-slate-300 text-slate-700 text-sm font-semibold hover:bg-slate-50">
+            ✏ Edit
+          </Link>
+          <DeleteStaffButton staffId={id} staffName={fullName} />
+        </div>
       </div>
 
       {/* Profile card */}
@@ -109,16 +116,19 @@ export default async function StaffProfilePage({ params }: { params: Promise<{ i
             </div>
           </div>
 
-          <div className="flex gap-2 flex-wrap">
+          <div className="flex gap-2 flex-wrap items-center">
             {staffMember.status === "applicant" && (
-              <form action={`/api/staff/${id}/activate`} method="POST">
-                <Link
-                  href={`/staff/${id}/activate`}
-                  className="inline-flex items-center justify-center rounded-lg bg-green-600 px-4 py-2 font-medium text-white hover:bg-green-700 text-sm"
-                >
-                  ✓ Activate Staff
-                </Link>
-              </form>
+              <ActivateStaffButton staffId={id} />
+            )}
+            {staffMember.signed_at && (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 text-emerald-800 px-3 py-1.5 text-xs font-semibold">
+                ✅ Letter Signed {new Date(staffMember.signed_at).toLocaleDateString()}
+              </span>
+            )}
+            {!staffMember.signed_at && staffMember.status !== "applicant" && (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 text-amber-700 px-3 py-1.5 text-xs font-semibold">
+                ✍️ Signature Pending
+              </span>
             )}
             <Link
               href={`/documents/new?owner_type=staff&staff_id=${staffMember.id}`}
@@ -126,14 +136,12 @@ export default async function StaffProfilePage({ params }: { params: Promise<{ i
             >
               + Upload Document
             </Link>
-            {staffMember.onboarding_token && (
-              <Link
-                href={`/staff/${id}/welcome-letter`}
-                className="inline-flex items-center justify-center rounded-lg border border-slate-300 px-4 py-2 font-medium text-slate-700 hover:bg-slate-50 text-sm"
-              >
-                📄 Welcome Letter
-              </Link>
-            )}
+            <Link
+              href={`/staff/${id}/welcome-letter`}
+              className="inline-flex items-center justify-center rounded-lg border border-slate-300 px-4 py-2 font-medium text-slate-700 hover:bg-slate-50 text-sm"
+            >
+              📄 Welcome Letter
+            </Link>
           </div>
         </div>
 
