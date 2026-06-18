@@ -48,7 +48,7 @@ export default async function ShiftsPage() {
     .order("shift_date", { ascending: true })
     .order("start_time", { ascending: true });
 
-  const shifts = (data ?? []) as Shift[];
+  const shifts = (data ?? []) as unknown as Shift[];
   const upcoming = shifts.filter(s => s.shift_date >= today && s.status !== "completed" && s.status !== "declined");
   const past     = shifts.filter(s => s.shift_date < today || s.status === "completed" || s.status === "declined");
 

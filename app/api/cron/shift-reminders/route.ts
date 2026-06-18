@@ -37,15 +37,15 @@ export async function GET(request: Request) {
       clock_in_reminder_sent, clock_out_reminder_sent,
       staff(first_name, last_name, email),
       residents(first_name, last_name, address),
-      organizations!shifts_facility_id_fkey(name, slug, primary_color)
+      organizations!shifts_facility_id_fkey(name, slug, primary_color, smtp_host, smtp_port, smtp_user, smtp_pass, smtp_from_name, smtp_from_email)
     `)
     .eq("shift_date", todayStr)
     .eq("status", "accepted");
 
   for (const shift of shifts ?? []) {
-    const org        = shift.organizations as { name: string; slug: string | null; primary_color: string | null } | null;
-    const staff      = shift.staff as { first_name: string; last_name: string; email: string | null } | null;
-    const resident   = shift.residents as { first_name: string; last_name: string; address: string | null } | null;
+    const org        = shift.organizations as unknown as { name: string; slug: string | null; primary_color: string | null; smtp_host?: string | null; smtp_port?: number | null; smtp_user?: string | null; smtp_pass?: string | null; smtp_from_name?: string | null; smtp_from_email?: string | null } | null;
+    const staff      = shift.staff as unknown as { first_name: string; last_name: string; email: string | null } | null;
+    const resident   = shift.residents as unknown as { first_name: string; last_name: string; address: string | null } | null;
 
     if (!staff?.email || !org?.slug) continue;
 
@@ -69,6 +69,7 @@ export async function GET(request: Request) {
             clientAddress: resident?.address ?? null,
             shiftTime:     shift.start_time.slice(0, 5),
             clockInUrl,
+            smtpConfig:    org ?? undefined,
           });
           await db.from("shifts").update({ clock_in_reminder_sent: true }).eq("id", shift.id);
           clockInSent++;
@@ -102,6 +103,7 @@ export async function GET(request: Request) {
               clientName,
               shiftTime:     shift.end_time.slice(0, 5),
               clockInUrl,
+              smtpConfig:    org ?? undefined,
             });
             await db.from("shifts").update({ clock_out_reminder_sent: true }).eq("id", shift.id);
             clockOutSent++;

@@ -47,7 +47,7 @@ export async function POST(request: Request) {
   const [staffRes, residentRes, orgRes] = await Promise.all([
     db.from("staff").select("first_name, last_name, email").eq("id", staffId).maybeSingle(),
     residentId ? db.from("residents").select("first_name, last_name, address").eq("id", residentId).maybeSingle() : Promise.resolve({ data: null }),
-    db.from("organizations").select("name, slug, primary_color").eq("id", facilityId).maybeSingle(),
+    db.from("organizations").select("name, slug, primary_color, smtp_host, smtp_port, smtp_user, smtp_pass, smtp_from_name, smtp_from_email").eq("id", facilityId).maybeSingle(),
   ]);
 
   const staff   = staffRes.data;
@@ -87,6 +87,7 @@ export async function POST(request: Request) {
         clientAddress: resident?.address ?? null,
         notes:         notes || null,
         respondUrl,
+        smtpConfig:    org ?? undefined,
       });
     } catch (e) {
       console.error("Shift email failed:", e);

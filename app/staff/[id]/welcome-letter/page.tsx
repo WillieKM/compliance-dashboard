@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getCurrentProfile } from "@/lib/auth/getCurrentProfile";
 import { createClient } from "@supabase/supabase-js";
+import EmailLetterButton from "../EmailLetterButton";
 
 export const dynamic = "force-dynamic";
 
@@ -73,6 +74,9 @@ export default async function WelcomeLetterPage({ params }: { params: Promise<{ 
                 Copy Link
               </button>
             </div>
+          )}
+          {staff.email && (
+            <EmailLetterButton staffId={id} staffEmail={staff.email} />
           )}
           <button
             id="print-btn"

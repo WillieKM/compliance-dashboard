@@ -26,7 +26,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   if (error || !data) return NextResponse.json({ error: "Shift not found" }, { status: 404 });
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-  const org    = data.organizations as { name: string; slug: string | null; primary_color: string | null; logo_url: string | null } | null;
+  const org    = data.organizations as unknown as { name: string; slug: string | null; primary_color: string | null; logo_url: string | null } | null;
   const clockInUrl = org?.slug
     ? `${appUrl}/portal/${org.slug}/shift/${data.id}`
     : null;

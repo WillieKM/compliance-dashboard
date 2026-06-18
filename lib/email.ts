@@ -144,6 +144,65 @@ export async function sendStaffOnboardingEmail(opts: {
     ), from, opts.smtpConfig);
 }
 
+// ─── Welcome Letter ───────────────────────────────────────────────────────────
+
+export async function sendWelcomeLetterEmail(opts: {
+  to: string;
+  staffName: string;
+  agencyName: string;
+  agencyColor: string;
+  taxWithholding: string;
+  signingUrl: string;
+  uploadUrl?: string | null;
+  smtpConfig?: SmtpConfig;
+}) {
+  const from    = getFromAddress(opts.agencyName, opts.smtpConfig);
+  const is1099  = opts.taxWithholding === "1099";
+  const taxBox  = is1099
+    ? `<div style="background:#fffbeb;border:1px solid #fcd34d;border-radius:10px;padding:14px 18px;margin:16px 0;">
+         <p style="margin:0;font-size:13px;font-weight:700;color:#92400e;">Tax Status: 1099 Independent Contractor</p>
+         <ul style="margin:8px 0 0;padding-left:18px;font-size:13px;color:#78350f;line-height:1.7;">
+           <li>No taxes will be withheld from your payments.</li>
+           <li>You are responsible for paying all income taxes, including self-employment tax.</li>
+           <li>You may need to make estimated quarterly tax payments.</li>
+           <li>You will receive a Form 1099-NEC if payments reach $600 or more.</li>
+         </ul>
+       </div>`
+    : `<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:14px 18px;margin:16px 0;">
+         <p style="margin:0;font-size:13px;font-weight:700;color:#166534;">Tax Status: W-2 Employee</p>
+         <ul style="margin:8px 0 0;padding-left:18px;font-size:13px;color:#15803d;line-height:1.7;">
+           <li>Federal, state, and local taxes will be withheld from each paycheck.</li>
+           <li>You will receive a W-2 at year end.</li>
+           <li>The agency matches your Social Security and Medicare contributions.</li>
+         </ul>
+       </div>`;
+
+  const uploadSection = opts.uploadUrl
+    ? `<p style="margin:20px 0 8px;font-size:14px;color:#475569;">Also complete your document upload before your first shift:</p>
+       <div style="text-align:center;">
+         <a href="${opts.uploadUrl}" style="display:inline-block;background:#475569;color:white;padding:12px 28px;border-radius:8px;font-weight:600;font-size:14px;text-decoration:none;">📎 Upload My Documents →</a>
+       </div>`
+    : "";
+
+  await send(
+    opts.to,
+    `Action Required: Review & Sign Your Welcome Letter — ${opts.agencyName}`,
+    wrap(opts.agencyColor, opts.agencyName, "Your Welcome Letter is Ready",
+      `<p style="font-size:16px;color:#475569;">Hi <strong>${opts.staffName}</strong>,</p>
+       <p style="font-size:15px;color:#475569;">Welcome to <strong>${opts.agencyName}</strong>! Please review your employment terms below and sign your welcome letter online.</p>
+       ${taxBox}
+       <p style="font-size:14px;color:#475569;">By signing, you confirm you have read and understood your employment arrangement, including your tax obligations.</p>
+       <div style="margin-top:24px;text-align:center;">
+         <a href="${opts.signingUrl}" style="display:inline-block;background:${opts.agencyColor};color:white;padding:16px 40px;border-radius:10px;font-weight:700;font-size:17px;text-decoration:none;">✍️ Sign My Welcome Letter →</a>
+       </div>
+       <p style="text-align:center;margin-top:10px;font-size:12px;color:#94a3b8;">Works on any device — phone, tablet, or computer. No login required.</p>
+       ${uploadSection}`
+    ),
+    from,
+    opts.smtpConfig,
+  );
+}
+
 // ─── Shared HTML wrapper ──────────────────────────────────────────────────────
 
 function wrap(color: string, agency: string, title: string, body: string): string {
