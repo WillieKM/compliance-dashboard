@@ -57,11 +57,14 @@ export async function PUT(request: Request) {
   let fromEmail: string;
 
   if (smtp_host && smtp_user && smtp_pass) {
+    const port   = smtp_port ?? 587;
+    const secure = port === 465;
     transport = nodemailer.createTransport({
-      host: smtp_host,
-      port: smtp_port ?? 587,
-      secure: (smtp_port ?? 587) === 465,
-      auth: { user: smtp_user, pass: smtp_pass },
+      host:       smtp_host,
+      port,
+      secure,
+      requireTLS: !secure,
+      auth:       { user: smtp_user, pass: smtp_pass },
     });
     fromEmail = smtp_from_email ?? smtp_user;
   } else if (process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD) {

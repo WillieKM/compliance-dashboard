@@ -16,11 +16,14 @@ function fmt12h(time: string): string {
 
 function createMailer(smtpConfig?: SmtpConfig): nodemailer.Transporter | null {
   if (smtpConfig?.smtp_host && smtpConfig.smtp_user && smtpConfig.smtp_pass) {
+    const port   = smtpConfig.smtp_port ?? 587;
+    const secure = port === 465;
     return nodemailer.createTransport({
-      host:   smtpConfig.smtp_host,
-      port:   smtpConfig.smtp_port ?? 587,
-      secure: (smtpConfig.smtp_port ?? 587) === 465,
-      auth:   { user: smtpConfig.smtp_user, pass: smtpConfig.smtp_pass },
+      host:       smtpConfig.smtp_host,
+      port,
+      secure,
+      requireTLS: !secure,
+      auth:       { user: smtpConfig.smtp_user, pass: smtpConfig.smtp_pass },
     });
   }
   if (process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD) {
