@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getCurrentProfile } from "@/lib/auth/getCurrentProfile";
 import { createClient } from "@supabase/supabase-js";
 import EmailLetterButton from "../EmailLetterButton";
+import AdminSignatureSection from "../AdminSignatureSection";
 
 export const dynamic = "force-dynamic";
 
@@ -21,7 +22,7 @@ export default async function WelcomeLetterPage({ params }: { params: Promise<{ 
   const db = admin();
   const [staffRes, orgRes] = await Promise.all([
     db.from("staff")
-      .select("id, first_name, last_name, role, email, phone, tax_withholding, onboarding_token, signing_token, signed_at, signature_url, created_at")
+      .select("id, first_name, last_name, role, email, phone, tax_withholding, onboarding_token, signing_token, signed_at, signature_url, admin_signature_url, admin_signed_at, created_at")
       .eq("id", id)
       .maybeSingle(),
     db.from("organizations")
@@ -180,24 +181,42 @@ export default async function WelcomeLetterPage({ params }: { params: Promise<{ 
           )}
 
           {/* Signature area */}
-          <div className="pt-4 border-t border-slate-200">
-            {isSigned && staff.signature_url ? (
-              <>
-                <p className="text-sm text-slate-500 mb-1">Employee Signature:</p>
+          <div className="pt-4 border-t border-slate-200 space-y-4">
+            {/* Employee signature */}
+            <div>
+              <p className="text-sm font-semibold text-slate-600 mb-1">Employee Signature</p>
+              {isSigned && staff.signature_url ? (
                 <div className="border border-slate-200 rounded-xl bg-slate-50 p-3 inline-block min-w-64">
                   <img src={staff.signature_url} alt="Signature" className="max-h-16 object-contain" />
                   <p className="text-xs text-slate-400 mt-1">Signed electronically on {signedDate}</p>
                 </div>
-                <div className="mt-4">
-                  <p className="text-sm text-slate-500 mt-4">Supervisor Signature: ___________________________  Date: ___________</p>
-                </div>
-              </>
-            ) : (
-              <>
-                <p className="text-sm text-slate-500 mt-2">Employee Signature: ___________________________  Date: ___________</p>
-                <p className="text-sm text-slate-500 mt-3">Supervisor Signature: ___________________________  Date: ___________</p>
-              </>
-            )}
+              ) : (
+                <p className="text-sm text-slate-400 italic">Awaiting employee signature…</p>
+              )}
+            </div>
+
+            {/* Admin / supervisor signature */}
+            <div className="print:hidden">
+              <p className="text-sm font-semibold text-slate-600 mb-1">Supervisor / Admin Signature</p>
+              {isSigned ? (
+                <AdminSignatureSection
+                  staffId={id}
+                  orgColor={orgColor}
+                  initialAdminSigUrl={staff.admin_signature_url ?? null}
+                  initialAdminSigAt={staff.admin_signed_at ?? null}
+                />
+              ) : (
+                <p className="text-sm text-slate-400 italic">Available after employee signs.</p>
+              )}
+            </div>
+
+            {/* Print-only static lines */}
+            <div className="hidden print:block space-y-2 pt-2">
+              {!(isSigned && staff.signature_url) && (
+                <p className="text-sm text-slate-500">Employee Signature: ___________________________  Date: ___________</p>
+              )}
+              <p className="text-sm text-slate-500">Supervisor Signature: ___________________________  Date: ___________</p>
+            </div>
           </div>
 
           {/* Document upload — hidden from print */}

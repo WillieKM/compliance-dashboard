@@ -206,6 +206,80 @@ export async function sendWelcomeLetterEmail(opts: {
   );
 }
 
+// ─── Signed Letter Copy ───────────────────────────────────────────────────────
+
+export async function sendSignedLetterEmail(opts: {
+  to: string;
+  staffName: string;
+  agencyName: string;
+  agencyColor: string;
+  taxWithholding: string;
+  hireDate: string;
+  signatureUrl: string;
+  signedAt: string;
+  adminSignatureUrl?: string | null;
+  adminSignedAt?: string | null;
+  smtpConfig?: SmtpConfig;
+}) {
+  const from     = getFromAddress(opts.agencyName, opts.smtpConfig);
+  const is1099   = opts.taxWithholding === "1099";
+  const dateFmt  = (d: string) => new Date(d).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+
+  const taxSection = is1099
+    ? `<div style="background:#fffbeb;border:1px solid #fcd34d;border-radius:10px;padding:14px 18px;margin:16px 0;">
+         <p style="margin:0;font-size:13px;font-weight:700;color:#92400e;">Tax Status: 1099 Independent Contractor</p>
+         <ul style="margin:8px 0 0;padding-left:18px;font-size:13px;color:#78350f;line-height:1.8;">
+           <li>No taxes withheld — you are responsible for all income and self-employment taxes.</li>
+           <li>You will receive Form 1099-NEC if payments reach $600 or more.</li>
+         </ul>
+       </div>`
+    : `<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:14px 18px;margin:16px 0;">
+         <p style="margin:0;font-size:13px;font-weight:700;color:#166534;">Tax Status: W-2 Employee</p>
+         <ul style="margin:8px 0 0;padding-left:18px;font-size:13px;color:#15803d;line-height:1.8;">
+           <li>Federal, state, and local taxes withheld each paycheck.</li>
+           <li>W-2 issued at year end. Agency matches FICA contributions.</li>
+         </ul>
+       </div>`;
+
+  const adminSig = opts.adminSignatureUrl
+    ? `<tr>
+         <td style="padding:10px 0;border-bottom:1px solid #f1f5f9;font-size:12px;color:#94a3b8;width:130px;vertical-align:top;">Agency Signature</td>
+         <td style="padding:10px 0;border-bottom:1px solid #f1f5f9;">
+           <img src="${opts.adminSignatureUrl}" alt="Agency Signature" style="max-height:48px;display:block;" />
+           <p style="margin:3px 0 0;font-size:11px;color:#94a3b8;">Signed ${opts.adminSignedAt ? dateFmt(opts.adminSignedAt) : ""}</p>
+         </td>
+       </tr>`
+    : "";
+
+  await send(
+    opts.to,
+    `Your Signed Welcome Letter — ${opts.agencyName}`,
+    wrap(opts.agencyColor, opts.agencyName, "Signed Welcome Letter — Your Copy",
+      `<p style="font-size:15px;color:#475569;">Hi <strong>${opts.staffName}</strong> — here is your fully signed welcome letter for your records.</p>
+       <table style="width:100%;border-collapse:collapse;margin:16px 0;">
+         <tr><td style="padding:10px 0;border-bottom:1px solid #f1f5f9;font-size:12px;color:#94a3b8;width:130px;">Issued</td>
+           <td style="padding:10px 0;border-bottom:1px solid #f1f5f9;font-size:15px;color:#1e293b;">${dateFmt(opts.hireDate)}</td></tr>
+         <tr><td style="padding:10px 0;border-bottom:1px solid #f1f5f9;font-size:12px;color:#94a3b8;">Employee</td>
+           <td style="padding:10px 0;border-bottom:1px solid #f1f5f9;font-size:15px;color:#1e293b;">${opts.staffName}</td></tr>
+       </table>
+       ${taxSection}
+       <table style="width:100%;border-collapse:collapse;margin-top:8px;">
+         <tr>
+           <td style="padding:10px 0;border-bottom:1px solid #f1f5f9;font-size:12px;color:#94a3b8;width:130px;vertical-align:top;">Employee Signature</td>
+           <td style="padding:10px 0;border-bottom:1px solid #f1f5f9;">
+             <img src="${opts.signatureUrl}" alt="Employee Signature" style="max-height:48px;display:block;" />
+             <p style="margin:3px 0 0;font-size:11px;color:#94a3b8;">Signed ${dateFmt(opts.signedAt)}</p>
+           </td>
+         </tr>
+         ${adminSig}
+       </table>
+       <p style="margin-top:16px;font-size:13px;color:#94a3b8;">Please save this email for your records. This letter was signed electronically and is legally binding.</p>`
+    ),
+    from,
+    opts.smtpConfig,
+  );
+}
+
 // ─── Admin: Documents Complete ────────────────────────────────────────────────
 
 export async function sendDocumentsCompleteEmail(opts: {

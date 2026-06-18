@@ -4,9 +4,11 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 
 type OrgInfo = { name: string; logoUrl: string | null; primaryColor: string; tagline: string | null };
+type DocType  = { id: string; name: string; category: string | null };
 type PageData = {
   staffId: string; staffName: string; role: string | null; taxWithholding: string | null;
   hireDate: string; alreadySigned: boolean; signedAt: string | null; signatureUrl: string | null;
+  uploadUrl: string | null; docTypes: DocType[];
   org: OrgInfo;
 };
 
@@ -205,8 +207,30 @@ export default function SignWelcomeLetterPage() {
               </div>
             )}
             <p className="text-sm text-slate-500 mt-4">
-              Thank you, <strong>{data.staffName}</strong>. A copy of this signed letter has been recorded. Your agency will provide you with a copy.
+              Thank you, <strong>{data.staffName}</strong>. Your signed letter has been recorded. You will receive a copy by email once your supervisor also signs.
             </p>
+
+            {/* Document upload next step */}
+            {data.uploadUrl && (
+              <div className="mt-5 rounded-xl border-2 border-blue-200 bg-blue-50 p-4">
+                <p className="font-bold text-blue-900 text-sm mb-1">📎 Next Step: Upload Your Documents</p>
+                <p className="text-blue-800 text-xs mb-3">Before your first shift, upload the following required documents. No login needed.</p>
+                {data.docTypes.length > 0 && (
+                  <ul className="mb-3 space-y-1">
+                    {data.docTypes.map(dt => (
+                      <li key={dt.id} className="flex items-center gap-2 text-xs text-blue-800">
+                        <span className="text-blue-400">□</span> {dt.name}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <a href={data.uploadUrl}
+                  className="inline-block w-full text-center rounded-xl py-2.5 text-white font-bold text-sm"
+                  style={{ backgroundColor: org.primaryColor }}>
+                  Upload My Documents →
+                </a>
+              </div>
+            )}
           </div>
         ) : (
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-4">
