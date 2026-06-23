@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 
 type SmtpConfig = {
@@ -24,21 +24,32 @@ export default function EmailSettingsPage() {
   const [testMsg, setTestMsg]   = useState<{ ok: boolean; text: string } | null>(null);
   const [showPass, setShowPass] = useState(false);
   const [preset, setPreset]     = useState("");
+  const editedRef = useRef(false);
 
   useEffect(() => {
     fetch("/api/org/email-settings")
       .then(r => r.ok ? r.json() : {})
-      .then(d => setConfig(prev => ({ ...prev, ...d })));
+      .then(d => {
+        // Skip if the user already started typing — don't clobber in-progress
+        // edits with the (possibly all-null) saved row once this resolves.
+        if (editedRef.current) return;
+        setConfig(prev => ({ ...prev, ...d }));
+      });
   }, []);
+
+  function updateConfig(patch: Partial<SmtpConfig>) {
+    editedRef.current = true;
+    setConfig(c => ({ ...c, ...patch }));
+  }
 
   function applyPreset(value: string) {
     setPreset(value);
     if (value === "gmail") {
-      setConfig(c => ({ ...c, smtp_host: "smtp.gmail.com", smtp_port: 587 }));
+      updateConfig({ smtp_host: "smtp.gmail.com", smtp_port: 587 });
     } else if (value === "outlook") {
-      setConfig(c => ({ ...c, smtp_host: "smtp.office365.com", smtp_port: 587 }));
+      updateConfig({ smtp_host: "smtp.office365.com", smtp_port: 587 });
     } else if (value === "yahoo") {
-      setConfig(c => ({ ...c, smtp_host: "smtp.mail.yahoo.com", smtp_port:587 }));
+      updateConfig({ smtp_host: "smtp.mail.yahoo.com", smtp_port: 587 });
     }
   }
 
@@ -137,19 +148,19 @@ export default function EmailSettingsPage() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="sm:col-span-2">
             <label className="block text-sm font-semibold text-slate-700 mb-1.5">SMTP Host</label>
-            <input type="text" value={config.smtp_host} onChange={e => setConfig(c => ({ ...c, smtp_host: e.target.value }))}
+            <input type="text" value={config.smtp_host} onChange={e => updateConfig({ smtp_host: e.target.value })}
               placeholder="smtp.gmail.com" className={inp} />
           </div>
           <div>
             <label className="block text-sm font-semibold text-slate-700 mb-1.5">Port</label>
-            <input type="number" value={config.smtp_port} onChange={e => setConfig(c => ({ ...c, smtp_port: Number(e.target.value) }))}
+            <input type="number" value={config.smtp_port} onChange={e => updateConfig({ smtp_port: Number(e.target.value) })}
               placeholder="587" className={inp} />
           </div>
         </div>
 
         <div>
           <label className="block text-sm font-semibold text-slate-700 mb-1.5">Username (your email address)</label>
-          <input type="email" value={config.smtp_user} onChange={e => setConfig(c => ({ ...c, smtp_user: e.target.value }))}
+          <input type="email" value={config.smtp_user} onChange={e => updateConfig({ smtp_user: e.target.value })}
             placeholder="yourname@youragency.com" className={inp} />
         </div>
 
@@ -159,7 +170,7 @@ export default function EmailSettingsPage() {
             <input
               type={showPass ? "text" : "password"}
               value={config.smtp_pass}
-              onChange={e => setConfig(c => ({ ...c, smtp_pass: e.target.value }))}
+              onChange={e => updateConfig({ smtp_pass: e.target.value })}
               placeholder="16-character app password"
               className={`${inp} pr-16`}
             />
@@ -173,12 +184,12 @@ export default function EmailSettingsPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-slate-100 pt-4">
           <div>
             <label className="block text-sm font-semibold text-slate-700 mb-1.5">From Name (displayed to recipients)</label>
-            <input type="text" value={config.smtp_from_name} onChange={e => setConfig(c => ({ ...c, smtp_from_name: e.target.value }))}
+            <input type="text" value={config.smtp_from_name} onChange={e => updateConfig({ smtp_from_name: e.target.value })}
               placeholder="Your Agency Name" className={inp} />
           </div>
           <div>
             <label className="block text-sm font-semibold text-slate-700 mb-1.5">From Email</label>
-            <input type="email" value={config.smtp_from_email} onChange={e => setConfig(c => ({ ...c, smtp_from_email: e.target.value }))}
+            <input type="email" value={config.smtp_from_email} onChange={e => updateConfig({ smtp_from_email: e.target.value })}
               placeholder="info@youragency.com" className={inp} />
           </div>
         </div>
