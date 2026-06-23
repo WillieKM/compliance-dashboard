@@ -25,9 +25,12 @@ function mailer() {
 }
 
 export async function GET(request: Request) {
-  // Protect with a secret so only your cron service can call this
-  const secret = request.headers.get("x-cron-secret");
-  if (secret !== process.env.CRON_SECRET) {
+  // Vercel's own Cron scheduler sends "Authorization: Bearer <CRON_SECRET>";
+  // x-cron-secret is kept for manual/external triggering.
+  const isAuthorized =
+    request.headers.get("authorization") === `Bearer ${process.env.CRON_SECRET}` ||
+    request.headers.get("x-cron-secret") === process.env.CRON_SECRET;
+  if (!isAuthorized) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

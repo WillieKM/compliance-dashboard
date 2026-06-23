@@ -1,0 +1,7 @@
+{
+  "crons": [
+    { "path": "/api/cron/shift-reminders", "schedule": "*/15 * * * *" },
+    { "path": "/api/cron/monthly-report", "schedule": "0 15 1 * *" },
+    { "path": "/api/cron/daily-check", "schedule": "0 13 * * *" }
+  ]
+}
