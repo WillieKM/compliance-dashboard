@@ -39,16 +39,17 @@ export default async function NewStaffPage({ searchParams }: { searchParams: Pro
     }
 
     const { data, error } = await db.from("staff").insert({
-      facility_id:     p.facility_id,
-      first_name:      String(formData.get("first_name") || ""),
-      last_name:       String(formData.get("last_name") || ""),
-      role:            String(formData.get("role") || "") || null,
-      email:           emailVal,
-      phone:           String(formData.get("phone") || "") || null,
-      status:          "active",
-      tax_withholding: String(formData.get("tax_withholding") || "W2"),
-      photo_url:       photoUrl,
-      signing_token:   crypto.randomUUID(),
+      facility_id:      p.facility_id,
+      first_name:       String(formData.get("first_name") || ""),
+      last_name:        String(formData.get("last_name") || ""),
+      role:             String(formData.get("role") || "") || null,
+      email:            emailVal,
+      phone:            String(formData.get("phone") || "") || null,
+      status:           "active",
+      tax_withholding:  String(formData.get("tax_withholding") || "W2"),
+      photo_url:        photoUrl,
+      signing_token:    crypto.randomUUID(),
+      onboarding_token: crypto.randomUUID(),
     }).select("id, first_name, last_name, onboarding_token").single();
     if (error) redirect(`/staff/new?error=${encodeURIComponent(error.message)}`);
 
