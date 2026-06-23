@@ -48,16 +48,30 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Branded Email Setup is not configured yet." }, { status: 500 });
   }
 
+  const conciergeUser = process.env.CONCIERGE_EMAIL_USER;
+  const conciergePass = process.env.CONCIERGE_EMAIL_APP_PASSWORD;
+  if (!conciergeUser || !conciergePass) {
+    return NextResponse.json({ error: "Branded Email Setup is not configured yet." }, { status: 500 });
+  }
+
   try {
     const item = await stripe.subscriptionItems.create({
       subscription: sub.stripe_subscription_id,
       price: priceId,
     });
 
+    // Auto-activate immediately: route through the shared concierge mailbox
+    // with the org's own name as the display name. No manual setup needed.
     const { error } = await db.from("organizations").update({
-      email_addon_status: "requested",
+      email_addon_status: "active",
       email_addon_subscription_item_id: item.id,
       email_addon_note: note || null,
+      smtp_host:       "smtp.gmail.com",
+      smtp_port:       587,
+      smtp_user:       conciergeUser,
+      smtp_pass:       conciergePass,
+      smtp_from_name:  profile.organizations?.name ?? null,
+      smtp_from_email: conciergeUser,
     }).eq("id", profile.facility_id);
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });

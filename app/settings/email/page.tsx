@@ -80,8 +80,8 @@ export default function EmailSettingsPage() {
     if (data.error) {
       setAddonMsg({ ok: false, text: data.error });
     } else {
-      setAddonStatus("requested");
-      setAddonMsg({ ok: true, text: "Request received — we'll be in touch to set this up." });
+      setAddonStatus("active");
+      setAddonMsg({ ok: true, text: "Activated! Your emails will now show your organization's name as the sender." });
     }
     setAddonBusy(false);
   }
@@ -339,8 +339,8 @@ export default function EmailSettingsPage() {
             className="text-left rounded-2xl border-2 border-blue-200 bg-white p-5 hover:border-blue-400 hover:bg-blue-50/40 transition-colors">
             <h3 className="font-bold text-slate-900">Have your team do it</h3>
             <p className="text-sm text-slate-500 mt-1.5">
-              $10/mo — our team configures your branded sending address for you.
-              No technical setup required.
+              $10/mo — activates instantly. Emails send under your organization's
+              name, no technical setup required.
             </p>
           </button>
         </div>
@@ -466,8 +466,8 @@ export default function EmailSettingsPage() {
           <div>
             <h2 className="font-bold text-slate-900">Branded Email Setup</h2>
             <p className="text-sm text-slate-500 mt-1">
-              For $10/mo, our team configures your branded sending address for you — no
-              technical setup required.
+              For $10/mo, this activates instantly — system emails will show your
+              organization's name as the sender. No technical setup required.
             </p>
           </div>
 
@@ -479,11 +479,11 @@ export default function EmailSettingsPage() {
 
           <form onSubmit={handleRequestAddon} className="space-y-3">
             <textarea value={addonNote} onChange={e => setAddonNote(e.target.value)}
-              placeholder="What address or domain would you like emails to send from? (e.g. info@youragency.com)"
+              placeholder="Anything else we should know? (optional)"
               rows={2} className={inp} />
             <button type="submit" disabled={addonBusy}
               className="rounded-xl px-5 py-2.5 bg-blue-600 text-white text-sm font-bold hover:bg-blue-700 disabled:opacity-60">
-              {addonBusy ? "Submitting…" : "Request Branded Email Setup — $10/mo"}
+              {addonBusy ? "Activating…" : "Activate Branded Email — $10/mo"}
             </button>
           </form>
 
