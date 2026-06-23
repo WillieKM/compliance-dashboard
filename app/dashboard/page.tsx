@@ -4,6 +4,7 @@ import { getDashboardMetrics } from "@/lib/compliance/getDashboardMetrics";
 import { getAlerts } from "@/lib/compliance/getAlerts";
 import { getCurrentProfile } from "@/lib/auth/getCurrentProfile";
 import { ALL_CARE_SETTINGS } from "@/lib/config/careSettings";
+import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
@@ -23,13 +24,18 @@ export default async function DashboardHubPage() {
   const activeSettings = profile.organizations?.care_settings ?? ALL_CARE_SETTINGS.map((s) => s.id);
   const visibleSettings = ALL_CARE_SETTINGS.filter((s) => activeSettings.includes(s.id));
 
-  const [metrics, alerts] = await Promise.all([
+  const supabase = await createClient();
+  const [metrics, alerts, orgEmailRes] = await Promise.all([
     getDashboardMetrics(facilityId),
     getAlerts(facilityId),
+    supabase.from("organizations").select("smtp_host, email_addon_status").eq("id", facilityId).maybeSingle(),
   ]);
 
   const activeAlerts = alerts.filter((a) => !a.resolved);
   const critical = activeAlerts.filter((a) => a.priority === "CRITICAL").length;
+
+  const org = orgEmailRes.data;
+  const emailNotConfigured = !org?.smtp_host && org?.email_addon_status !== "active" && org?.email_addon_status !== "requested";
 
   return (
     <div className="max-w-6xl mx-auto space-y-10">
@@ -54,6 +60,20 @@ export default async function DashboardHubPage() {
           </div>
         ))}
       </div>
+
+      {emailNotConfigured && (
+        <div className="rounded-xl bg-amber-50 border-2 border-amber-200 p-4 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">✉️</span>
+            <p className="font-semibold text-amber-900">
+              Email isn't configured — shift assignments, reminders, and onboarding emails won't be sent.
+            </p>
+          </div>
+          <Link href="/settings/email" className="shrink-0 text-sm font-semibold text-amber-700 hover:underline">
+            Set up email →
+          </Link>
+        </div>
+      )}
 
       {critical > 0 && (
         <div className="rounded-xl bg-red-50 border-2 border-red-200 p-4 flex items-center justify-between gap-4">

@@ -32,9 +32,20 @@ export async function POST(request: Request) {
 
   const body = await request.json();
   const { orgId, smtp_host, smtp_port, smtp_user, smtp_pass, smtp_from_name, smtp_from_email } = body;
-  const targetOrgId = orgId && profile.is_super_admin ? orgId : profile.facility_id;
+  const isSuperAdminOverride = !!orgId && profile.is_super_admin;
+  const targetOrgId = isSuperAdminOverride ? orgId : profile.facility_id;
 
   const db = admin();
+
+  // Only flip a pending concierge request to "active" — never invent a paid
+  // add-on for an org that never requested (and was never billed for) one.
+  let markActive = false;
+  if (isSuperAdminOverride) {
+    const { data: org } = await db.from("organizations")
+      .select("email_addon_status").eq("id", targetOrgId).maybeSingle();
+    markActive = org?.email_addon_status === "requested";
+  }
+
   const { error } = await db.from("organizations").update({
     smtp_host:       smtp_host || null,
     smtp_port:       smtp_port ? Number(smtp_port) : 587,
@@ -42,6 +53,7 @@ export async function POST(request: Request) {
     smtp_pass:       smtp_pass || null,
     smtp_from_name:  smtp_from_name || null,
     smtp_from_email: smtp_from_email || null,
+    ...(markActive ? { email_addon_status: "active" } : {}),
   }).eq("id", targetOrgId);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
