@@ -24,10 +24,23 @@ export default function EmailSettingsPage() {
   const [testMsg, setTestMsg]   = useState<{ ok: boolean; text: string } | null>(null);
   const [showPass, setShowPass] = useState(false);
   const [preset, setPreset]     = useState("");
+  const [orgId, setOrgId]       = useState<string | null>(null);
+  const [orgName, setOrgName]   = useState<string | null>(null);
+  const [addonStatus, setAddonStatus] = useState<string | null>(null);
+  const [addonNote, setAddonNote]     = useState("");
+  const [addonBusy, setAddonBusy]     = useState(false);
+  const [addonMsg, setAddonMsg]       = useState<{ ok: boolean; text: string } | null>(null);
   const editedRef = useRef(false);
 
+  // Read from URL after mount (avoids useSearchParams Suspense requirement)
   useEffect(() => {
-    fetch("/api/org/email-settings")
+    const params = new URLSearchParams(window.location.search);
+    const urlOrgId = params.get("orgId");
+    setOrgId(urlOrgId);
+    setOrgName(params.get("orgName"));
+
+    const qs = urlOrgId ? `?orgId=${urlOrgId}` : "";
+    fetch(`/api/org/email-settings${qs}`)
       .then(r => r.ok ? r.json() : {})
       .then(d => {
         // Skip if the user already started typing — don't clobber in-progress
@@ -37,9 +50,51 @@ export default function EmailSettingsPage() {
       });
   }, []);
 
+  useEffect(() => {
+    fetch("/api/org/email-addon")
+      .then(r => r.ok ? r.json() : {})
+      .then((d: { email_addon_status?: string; email_addon_note?: string }) => {
+        setAddonStatus(d.email_addon_status ?? null);
+        setAddonNote(d.email_addon_note ?? "");
+      });
+  }, []);
+
   function updateConfig(patch: Partial<SmtpConfig>) {
     editedRef.current = true;
     setConfig(c => ({ ...c, ...patch }));
+  }
+
+  async function handleRequestAddon(e: React.FormEvent) {
+    e.preventDefault();
+    setAddonBusy(true);
+    setAddonMsg(null);
+    const res = await fetch("/api/org/email-addon", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ note: addonNote }),
+    });
+    const data = await res.json();
+    if (data.error) {
+      setAddonMsg({ ok: false, text: data.error });
+    } else {
+      setAddonStatus("requested");
+      setAddonMsg({ ok: true, text: "Request received — we'll be in touch to set this up." });
+    }
+    setAddonBusy(false);
+  }
+
+  async function handleCancelAddon() {
+    setAddonBusy(true);
+    setAddonMsg(null);
+    const res = await fetch("/api/org/email-addon", { method: "DELETE" });
+    const data = await res.json();
+    if (data.error) {
+      setAddonMsg({ ok: false, text: data.error });
+    } else {
+      setAddonStatus("cancelled");
+      setAddonMsg({ ok: true, text: "Request cancelled." });
+    }
+    setAddonBusy(false);
   }
 
   function applyPreset(value: string) {
@@ -60,7 +115,7 @@ export default function EmailSettingsPage() {
     const res = await fetch("/api/org/email-settings", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(config),
+      body: JSON.stringify({ ...config, orgId }),
     });
     const data = await res.json();
     setMsg(data.error ? { ok: false, text: data.error } : { ok: true, text: "Email settings saved successfully." });
@@ -93,6 +148,60 @@ export default function EmailSettingsPage() {
           Configure your agency's email so all system emails (shift assignments, reminders, onboarding) send from your official address.
         </p>
       </div>
+
+      {orgId && (
+        <div className="rounded-2xl bg-amber-50 border border-amber-200 p-4 text-sm text-amber-900">
+          <strong>Super-admin mode:</strong> you're editing email settings for{" "}
+          <strong>{orgName ?? orgId}</strong>, not your own organization.
+        </div>
+      )}
+
+      {/* Branded Email Setup add-on — self-view only */}
+      {!orgId && (
+        <div className="rounded-2xl border border-blue-200 bg-white shadow-sm p-5 space-y-4">
+          <div>
+            <h2 className="font-bold text-slate-900">Branded Email Setup</h2>
+            <p className="text-sm text-slate-500 mt-1">
+              Don't want to deal with SMTP yourself? For $10/mo, our team configures your
+              branded sending address for you — no technical setup required.
+            </p>
+          </div>
+
+          {addonMsg && (
+            <div className={`rounded-lg p-3 text-sm ${addonMsg.ok ? "bg-emerald-50 border border-emerald-200 text-emerald-800" : "bg-red-50 border border-red-200 text-red-700"}`}>
+              {addonMsg.text}
+            </div>
+          )}
+
+          {addonStatus === "requested" ? (
+            <div className="flex items-center justify-between rounded-lg bg-blue-50 border border-blue-200 p-3">
+              <p className="text-sm text-blue-800">Request received — our team will reach out to set this up.</p>
+              <button onClick={handleCancelAddon} disabled={addonBusy}
+                className="text-xs font-semibold text-blue-700 hover:underline shrink-0 ml-3">
+                Cancel
+              </button>
+            </div>
+          ) : addonStatus === "active" ? (
+            <div className="flex items-center justify-between rounded-lg bg-emerald-50 border border-emerald-200 p-3">
+              <p className="text-sm text-emerald-800 font-semibold">Active</p>
+              <button onClick={handleCancelAddon} disabled={addonBusy}
+                className="text-xs font-semibold text-emerald-700 hover:underline shrink-0 ml-3">
+                Cancel
+              </button>
+            </div>
+          ) : (
+            <form onSubmit={handleRequestAddon} className="space-y-3">
+              <textarea value={addonNote} onChange={e => setAddonNote(e.target.value)}
+                placeholder="What address or domain would you like emails to send from? (e.g. info@youragency.com)"
+                rows={2} className={inp} />
+              <button type="submit" disabled={addonBusy}
+                className="rounded-xl px-5 py-2.5 bg-blue-600 text-white text-sm font-bold hover:bg-blue-700 disabled:opacity-60">
+                {addonBusy ? "Submitting…" : "Request Branded Email Setup — $10/mo"}
+              </button>
+            </form>
+          )}
+        </div>
+      )}
 
       {/* How it works */}
       <div className="rounded-2xl bg-blue-50 border border-blue-200 p-5">

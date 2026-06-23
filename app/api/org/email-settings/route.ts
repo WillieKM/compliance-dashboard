@@ -10,14 +10,17 @@ function admin() {
   );
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   const profile = await getCurrentProfile();
   if (!profile) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const orgIdParam = new URL(request.url).searchParams.get("orgId");
+  const targetOrgId = orgIdParam && profile.is_super_admin ? orgIdParam : profile.facility_id;
 
   const db = admin();
   const { data } = await db.from("organizations")
     .select("smtp_host, smtp_port, smtp_user, smtp_pass, smtp_from_name, smtp_from_email")
-    .eq("id", profile.facility_id)
+    .eq("id", targetOrgId)
     .maybeSingle();
 
   return NextResponse.json(data ?? {});
@@ -28,7 +31,8 @@ export async function POST(request: Request) {
   if (!profile) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await request.json();
-  const { smtp_host, smtp_port, smtp_user, smtp_pass, smtp_from_name, smtp_from_email } = body;
+  const { orgId, smtp_host, smtp_port, smtp_user, smtp_pass, smtp_from_name, smtp_from_email } = body;
+  const targetOrgId = orgId && profile.is_super_admin ? orgId : profile.facility_id;
 
   const db = admin();
   const { error } = await db.from("organizations").update({
@@ -38,7 +42,7 @@ export async function POST(request: Request) {
     smtp_pass:       smtp_pass || null,
     smtp_from_name:  smtp_from_name || null,
     smtp_from_email: smtp_from_email || null,
-  }).eq("id", profile.facility_id);
+  }).eq("id", targetOrgId);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ success: true });

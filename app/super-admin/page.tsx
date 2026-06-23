@@ -47,6 +47,7 @@ export default async function SuperAdminPage() {
         </div>
         <div className="flex items-center gap-4">
           <Link href="/super-admin/companies" className="text-sm text-slate-400 hover:text-white">Companies →</Link>
+          <Link href="/super-admin/email-requests" className="text-sm text-slate-400 hover:text-white">Email Requests →</Link>
           <Link href="/dashboard" className="text-sm text-slate-400 hover:text-white">← Your Dashboard</Link>
           <span className="text-xs bg-yellow-500 text-slate-900 font-bold px-2 py-1 rounded-full">PLATFORM OWNER</span>
         </div>
