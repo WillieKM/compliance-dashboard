@@ -98,7 +98,7 @@ export async function GET(request: Request) {
           try {
             const urgency = diff <= 7 ? "🔴 URGENT" : diff <= 14 ? "🟡 ACTION NEEDED" : "📋 REMINDER";
             await transport.sendMail({
-              from: `"CareCompliance" <${process.env.CONCIERGE_EMAIL_USER}>`,
+              from: `"CareCompliance" <${process.env.CONCIERGE_EMAIL_FROM ?? process.env.CONCIERGE_EMAIL_USER}>`,
               to: staffMember.email,
               subject: `${urgency}: ${doc.file_name} expires in ${diff} days`,
               html: `
@@ -162,21 +162,25 @@ export async function GET(request: Request) {
   const adminEmail = process.env.NOTIFICATION_EMAIL;
   const transport = mailer();
   if (adminEmail && transport && alertsCreated > 0) {
-    await transport.sendMail({
-      from: `"CareCompliance" <${process.env.CONCIERGE_EMAIL_USER}>`,
-      to: adminEmail,
-      subject: `Daily Compliance Check — ${today}`,
-      html: `
-        <h2>Daily Compliance Summary</h2>
-        <table style="border-collapse:collapse;font-family:sans-serif">
-          <tr><td style="padding:8px;font-weight:bold">New alerts created</td><td style="padding:8px">${alertsCreated}</td></tr>
-          <tr style="background:#f9fafb"><td style="padding:8px;font-weight:bold">Staff reminder emails sent</td><td style="padding:8px">${emailsSent}</td></tr>
-          <tr><td style="padding:8px;font-weight:bold">Resident statuses updated</td><td style="padding:8px">${residentsUpdated}</td></tr>
-          <tr style="background:#f9fafb"><td style="padding:8px;font-weight:bold">Run date</td><td style="padding:8px">${today}</td></tr>
-        </table>
-        <p style="margin-top:24px"><a href="${process.env.NEXT_PUBLIC_APP_URL}/alerts">View all alerts →</a></p>
-      `,
-    });
+    try {
+      await transport.sendMail({
+        from: `"CareCompliance" <${process.env.CONCIERGE_EMAIL_FROM ?? process.env.CONCIERGE_EMAIL_USER}>`,
+        to: adminEmail,
+        subject: `Daily Compliance Check — ${today}`,
+        html: `
+          <h2>Daily Compliance Summary</h2>
+          <table style="border-collapse:collapse;font-family:sans-serif">
+            <tr><td style="padding:8px;font-weight:bold">New alerts created</td><td style="padding:8px">${alertsCreated}</td></tr>
+            <tr style="background:#f9fafb"><td style="padding:8px;font-weight:bold">Staff reminder emails sent</td><td style="padding:8px">${emailsSent}</td></tr>
+            <tr><td style="padding:8px;font-weight:bold">Resident statuses updated</td><td style="padding:8px">${residentsUpdated}</td></tr>
+            <tr style="background:#f9fafb"><td style="padding:8px;font-weight:bold">Run date</td><td style="padding:8px">${today}</td></tr>
+          </table>
+          <p style="margin-top:24px"><a href="${process.env.NEXT_PUBLIC_APP_URL}/alerts">View all alerts →</a></p>
+        `,
+      });
+    } catch (e) {
+      console.error("Daily summary email failed:", e);
+    }
   }
 
   return NextResponse.json({

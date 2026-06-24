@@ -50,6 +50,7 @@ export async function POST(request: Request) {
 
   const conciergeUser = process.env.CONCIERGE_EMAIL_USER;
   const conciergePass = process.env.CONCIERGE_EMAIL_APP_PASSWORD;
+  const conciergeFrom = process.env.CONCIERGE_EMAIL_FROM ?? conciergeUser;
   if (!conciergeUser || !conciergePass) {
     return NextResponse.json({ error: "Branded Email Setup is not configured yet." }, { status: 500 });
   }
@@ -71,7 +72,7 @@ export async function POST(request: Request) {
       smtp_user:       conciergeUser,
       smtp_pass:       conciergePass,
       smtp_from_name:  profile.organizations?.name ?? null,
-      smtp_from_email: conciergeUser,
+      smtp_from_email: conciergeFrom,
     }).eq("id", profile.facility_id);
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });

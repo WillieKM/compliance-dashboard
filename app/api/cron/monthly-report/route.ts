@@ -81,8 +81,9 @@ export async function GET(request: Request) {
     const overdueResidents = residents.filter((r) => r.status === "overdue");
     const reviewResidents = residents.filter((r) => r.status === "review");
 
-    await transport.sendMail({
-      from: `"CareCompliance" <${process.env.CONCIERGE_EMAIL_USER}>`,
+    try {
+      await transport.sendMail({
+      from: `"CareCompliance" <${process.env.CONCIERGE_EMAIL_FROM ?? process.env.CONCIERGE_EMAIL_USER}>`,
       to: adminEmail,
       subject: `${org.name} — Monthly Compliance Report: ${month}`,
       html: `
@@ -135,9 +136,11 @@ export async function GET(request: Request) {
           </div>
         </div>
       `,
-    });
-
-    reportsSent++;
+      });
+      reportsSent++;
+    } catch (e) {
+      console.error(`Monthly report failed for org ${org.id}:`, e);
+    }
   }
 
   return NextResponse.json({ success: true, month, reportsSent });
