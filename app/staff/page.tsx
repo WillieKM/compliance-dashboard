@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/auth/getCurrentProfile";
+import { getSignedUrls } from "@/lib/storage";
 
 export const dynamic = "force-dynamic";
 
@@ -25,6 +26,7 @@ export default async function StaffPage() {
 
   const applicants = staff?.filter(s => s.status === "applicant") ?? [];
   const activeStaff = staff?.filter(s => s.status !== "applicant") ?? [];
+  const photoUrls = await getSignedUrls((staff ?? []).map((s) => s.photo_url));
 
   return (
     <div className="max-w-7xl mx-auto space-y-6 p-6">
@@ -61,8 +63,8 @@ export default async function StaffPage() {
                 <tr key={person.id} className="border-b hover:bg-orange-50/40">
                   <td className="p-4">
                     <div className="flex items-center gap-3">
-                      {person.photo_url ? (
-                        <img src={person.photo_url} alt="" className="h-9 w-9 rounded-full object-cover border border-slate-200 shrink-0" />
+                      {person.photo_url && photoUrls.get(person.photo_url) ? (
+                        <img src={photoUrls.get(person.photo_url)} alt="" className="h-9 w-9 rounded-full object-cover border border-slate-200 shrink-0" />
                       ) : (
                         <div className="h-9 w-9 rounded-full bg-orange-100 flex items-center justify-center text-sm font-bold text-orange-600 shrink-0">
                           {person.first_name?.[0]}{person.last_name?.[0]}
@@ -101,8 +103,8 @@ export default async function StaffPage() {
                 <tr key={person.id} className="border-b hover:bg-gray-50">
                   <td className="p-4">
                     <div className="flex items-center gap-3">
-                      {person.photo_url ? (
-                        <img src={person.photo_url} alt="" className="h-9 w-9 rounded-full object-cover border border-slate-200 shrink-0" />
+                      {person.photo_url && photoUrls.get(person.photo_url) ? (
+                        <img src={photoUrls.get(person.photo_url)} alt="" className="h-9 w-9 rounded-full object-cover border border-slate-200 shrink-0" />
                       ) : (
                         <div className="h-9 w-9 rounded-full bg-slate-100 flex items-center justify-center text-sm font-bold text-slate-500 shrink-0">
                           {person.first_name?.[0]}{person.last_name?.[0]}

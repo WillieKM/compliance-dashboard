@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import nodemailer from "nodemailer";
+import { getSignedUrl } from "@/lib/storage";
 
 const db = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -33,17 +34,17 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
 
   if (!org) return NextResponse.json({ error: "Agency not found" }, { status: 404 });
 
-  // Upload photo to storage if provided
-  let photoUrl: string | null = null;
+  // Upload photo to storage if provided — store the bare path; the
+  // "documents" bucket is private, so callers get a fresh signed URL.
+  let photoPath: string | null = null;
   if (photoFile && photoFile.size > 0) {
     const safeName = photoFile.name.replace(/[^a-zA-Z0-9._-]/g, "-");
     const filePath = `${org.id}/applicant-photos/${Date.now()}-${safeName}`;
     const { error: uploadErr } = await db.storage.from("documents").upload(filePath, photoFile, { upsert: false });
-    if (!uploadErr) {
-      const { data: urlData } = db.storage.from("documents").getPublicUrl(filePath);
-      photoUrl = urlData.publicUrl;
-    }
+    if (!uploadErr) photoPath = filePath;
   }
+  // Long-lived signed URL just for embedding in the admin notification email below.
+  const photoEmailUrl = await getSignedUrl(photoPath, 60 * 60 * 24 * 365);
 
   // Build application notes blob to store extra fields
   const applicationNotes = [
@@ -64,7 +65,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
     phone,
     role,
     status:            "applicant",
-    photo_url:         photoUrl,
+    photo_url:         photoPath,
     application_notes: applicationNotes || null,
   }).select("id").single();
 
@@ -103,7 +104,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
               <p style="margin:4px 0 0;opacity:0.75">New Staff Application</p>
             </div>
             <div style="background:white;padding:24px;border:1px solid #e2e8f0;border-radius:0 0 8px 8px">
-              ${photoUrl ? `<div style="text-align:center;margin-bottom:20px"><img src="${photoUrl}" style="width:100px;height:100px;border-radius:50%;object-fit:cover;border:3px solid #e2e8f0" /></div>` : ""}
+              ${photoEmailUrl ? `<div style="text-align:center;margin-bottom:20px"><img src="${photoEmailUrl}" style="width:100px;height:100px;border-radius:50%;object-fit:cover;border:3px solid #e2e8f0" /></div>` : ""}
               <table style="width:100%;border-collapse:collapse">
                 <tr><td style="padding:8px;font-weight:bold;color:#64748b">Name</td><td style="padding:8px">${firstName} ${lastName}</td></tr>
                 <tr style="background:#f8fafc"><td style="padding:8px;font-weight:bold;color:#64748b">Email</td><td style="padding:8px"><a href="mailto:${email}">${email}</a></td></tr>

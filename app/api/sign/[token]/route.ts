@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { getSignedUrl } from "@/lib/storage";
 
 function admin() {
   return createClient(
@@ -37,7 +38,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ token: 
     hireDate:       staff.created_at,
     alreadySigned:  !!staff.signed_at,
     signedAt:       staff.signed_at,
-    signatureUrl:   staff.signature_url,
+    signatureUrl:   await getSignedUrl(staff.signature_url),
     uploadUrl:      staff.onboarding_token ? `${appUrl}/staff-onboarding/${staff.onboarding_token}` : null,
     docTypes,
     org: {
@@ -81,15 +82,13 @@ export async function POST(request: Request, { params }: { params: Promise<{ tok
 
   if (uploadErr) return NextResponse.json({ error: "Signature upload failed: " + uploadErr.message }, { status: 500 });
 
-  const { data: urlData } = db.storage.from("documents").getPublicUrl(filePath);
-  const signatureUrl = urlData.publicUrl;
-
   const { error } = await db.from("staff").update({
     signed_at:     new Date().toISOString(),
-    signature_url: signatureUrl,
+    signature_url: filePath,
   }).eq("id", staff.id);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
+  const signatureUrl = await getSignedUrl(filePath);
   return NextResponse.json({ success: true, signatureUrl, signedAt: new Date().toISOString() });
 }

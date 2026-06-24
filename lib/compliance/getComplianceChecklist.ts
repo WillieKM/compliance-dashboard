@@ -1,4 +1,11 @@
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@supabase/supabase-js";
+
+function admin() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+}
 
 export type ComplianceStatus = "valid" | "expiring" | "expired" | "missing";
 
@@ -65,7 +72,7 @@ export async function getComplianceChecklist(
   appliesTo: "staff" | "resident",
   ownerId: string
 ): Promise<ComplianceChecklistItem[]> {
- const { data: requirements, error: requirementsError } = await supabase
+ const { data: requirements, error: requirementsError } = await admin()
   .from("compliance_requirements")
   .select(
     `
@@ -86,7 +93,7 @@ export async function getComplianceChecklist(
     );
   }
 
-  let documentsQuery = supabase
+  let documentsQuery = admin()
     .from("documents")
     .select(
       `

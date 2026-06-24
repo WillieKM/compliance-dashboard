@@ -4,6 +4,7 @@ import { getCurrentProfile } from "@/lib/auth/getCurrentProfile";
 import { createClient } from "@supabase/supabase-js";
 import EmailLetterButton from "../EmailLetterButton";
 import AdminSignatureSection from "../AdminSignatureSection";
+import { getSignedUrl } from "@/lib/storage";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +25,7 @@ export default async function WelcomeLetterPage({ params }: { params: Promise<{ 
     db.from("staff")
       .select("id, first_name, last_name, role, email, phone, tax_withholding, onboarding_token, signing_token, signed_at, signature_url, admin_signature_url, admin_signed_at, created_at")
       .eq("id", id)
+      .eq("facility_id", profile.facility_id)
       .maybeSingle(),
     db.from("organizations")
       .select("name, logo_url, primary_color, tagline")
@@ -53,6 +55,8 @@ export default async function WelcomeLetterPage({ params }: { params: Promise<{ 
   const signedDate = staff.signed_at
     ? new Date(staff.signed_at).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
     : null;
+  const signatureDisplayUrl = await getSignedUrl(staff.signature_url);
+  const adminSignatureDisplayUrl = await getSignedUrl(staff.admin_signature_url);
 
   return (
     <div>
@@ -185,9 +189,9 @@ export default async function WelcomeLetterPage({ params }: { params: Promise<{ 
             {/* Employee signature */}
             <div>
               <p className="text-sm font-semibold text-slate-600 mb-1">Employee Signature</p>
-              {isSigned && staff.signature_url ? (
+              {isSigned && signatureDisplayUrl ? (
                 <div className="border border-slate-200 rounded-xl bg-slate-50 p-3 inline-block min-w-64">
-                  <img src={staff.signature_url} alt="Signature" className="max-h-16 object-contain" />
+                  <img src={signatureDisplayUrl} alt="Signature" className="max-h-16 object-contain" />
                   <p className="text-xs text-slate-400 mt-1">Signed electronically on {signedDate}</p>
                 </div>
               ) : (
@@ -202,7 +206,7 @@ export default async function WelcomeLetterPage({ params }: { params: Promise<{ 
                 <AdminSignatureSection
                   staffId={id}
                   orgColor={orgColor}
-                  initialAdminSigUrl={staff.admin_signature_url ?? null}
+                  initialAdminSigUrl={adminSignatureDisplayUrl}
                   initialAdminSigAt={staff.admin_signed_at ?? null}
                 />
               ) : (

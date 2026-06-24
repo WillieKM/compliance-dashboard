@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getCurrentProfile } from "@/lib/auth/getCurrentProfile";
 import { createClient } from "@supabase/supabase-js";
 import { sendSignedLetterEmail } from "@/lib/email";
+import { getSignedUrl } from "@/lib/storage";
 
 function admin() {
   return createClient(
@@ -45,12 +46,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
   if (uploadErr) return NextResponse.json({ error: "Upload failed: " + uploadErr.message }, { status: 500 });
 
-  const { data: urlData }    = db.storage.from("documents").getPublicUrl(filePath);
-  const adminSignatureUrl    = urlData.publicUrl;
-  const adminSignedAt        = new Date().toISOString();
+  const adminSignedAt = new Date().toISOString();
 
   const { error } = await db.from("staff").update({
-    admin_signature_url: adminSignatureUrl,
+    admin_signature_url: filePath,
     admin_signed_at:     adminSignedAt,
   }).eq("id", id);
 
@@ -66,6 +65,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
     const appUrl     = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
     const uploadUrl  = staff.onboarding_token ? `${appUrl}/staff-onboarding/${staff.onboarding_token}` : undefined;
+    // Long-lived since this gets embedded in an email the caregiver may open much later.
+    const oneYear = 60 * 60 * 24 * 365;
 
     try {
       await sendSignedLetterEmail({
@@ -75,9 +76,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         agencyColor:        org?.primary_color ?? "#1a3a52",
         taxWithholding:     staff.tax_withholding ?? "W2",
         hireDate:           staff.created_at,
-        signatureUrl:       staff.signature_url,
+        signatureUrl:       await getSignedUrl(staff.signature_url, oneYear) ?? "",
         signedAt:           staff.signed_at,
-        adminSignatureUrl,
+        adminSignatureUrl:  await getSignedUrl(filePath, oneYear) ?? undefined,
         adminSignedAt,
         smtpConfig:         org ?? undefined,
       });
@@ -86,5 +87,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     }
   }
 
+  const adminSignatureUrl = await getSignedUrl(filePath);
   return NextResponse.json({ success: true, adminSignatureUrl, adminSignedAt });
 }

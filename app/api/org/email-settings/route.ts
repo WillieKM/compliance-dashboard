@@ -23,7 +23,11 @@ export async function GET(request: Request) {
     .eq("id", targetOrgId)
     .maybeSingle();
 
-  return NextResponse.json(data ?? {});
+  if (!data) return NextResponse.json({});
+
+  // Never return the real password to the browser — just whether one is set.
+  const { smtp_pass, ...rest } = data;
+  return NextResponse.json({ ...rest, smtp_pass_set: !!smtp_pass });
 }
 
 export async function POST(request: Request) {
@@ -46,15 +50,19 @@ export async function POST(request: Request) {
     markActive = org?.email_addon_status === "requested";
   }
 
-  const { error } = await db.from("organizations").update({
+  const updates: Record<string, unknown> = {
     smtp_host:       smtp_host || null,
     smtp_port:       smtp_port ? Number(smtp_port) : 587,
     smtp_user:       smtp_user || null,
-    smtp_pass:       smtp_pass || null,
     smtp_from_name:  smtp_from_name || null,
     smtp_from_email: smtp_from_email || null,
     ...(markActive ? { email_addon_status: "active" } : {}),
-  }).eq("id", targetOrgId);
+  };
+  // GET never returns the real password, so a blank field here means
+  // "unchanged" — only overwrite it when a new value was actually typed.
+  if (smtp_pass) updates.smtp_pass = smtp_pass;
+
+  const { error } = await db.from("organizations").update(updates).eq("id", targetOrgId);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ success: true });
@@ -65,9 +73,29 @@ export async function PUT(request: Request) {
   if (!profile) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await request.json();
-  const { to, smtp_host, smtp_port, smtp_user, smtp_pass, smtp_from_name, smtp_from_email } = body;
+  let { smtp_host, smtp_port, smtp_user, smtp_pass, smtp_from_name, smtp_from_email } = body;
+  const { to, orgId } = body;
 
   if (!to) return NextResponse.json({ error: "Recipient email required" }, { status: 400 });
+
+  // The form never holds the real saved password — if none was typed,
+  // fall back to whatever's already stored for this org.
+  if (!smtp_pass) {
+    const isSuperAdminOverride = !!orgId && profile.is_super_admin;
+    const targetOrgId = isSuperAdminOverride ? orgId : profile.facility_id;
+    const { data: saved } = await admin().from("organizations")
+      .select("smtp_host, smtp_port, smtp_user, smtp_pass, smtp_from_name, smtp_from_email")
+      .eq("id", targetOrgId)
+      .maybeSingle();
+    if (saved) {
+      smtp_host       = smtp_host || saved.smtp_host;
+      smtp_port       = smtp_port || saved.smtp_port;
+      smtp_user       = smtp_user || saved.smtp_user;
+      smtp_pass       = saved.smtp_pass;
+      smtp_from_name  = smtp_from_name || saved.smtp_from_name;
+      smtp_from_email = smtp_from_email || saved.smtp_from_email;
+    }
+  }
 
   let transport: nodemailer.Transporter;
   let fromEmail: string;

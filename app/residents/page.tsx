@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/auth/getCurrentProfile";
+import { getSignedUrls } from "@/lib/storage";
 
 export const dynamic = "force-dynamic";
 
@@ -15,6 +16,8 @@ export default async function ResidentsPage() {
     .select("*")
     .eq("facility_id", profile.facility_id)
     .order("created_at", { ascending: false });
+
+  const photoUrls = await getSignedUrls((residents ?? []).map((r) => r.photo_url));
 
   return (
     <div>
@@ -42,8 +45,8 @@ export default async function ResidentsPage() {
                 <tr key={resident.id} className="border-b hover:bg-gray-50">
                   <td className="p-3">
                     <div className="flex items-center gap-3">
-                      {resident.photo_url ? (
-                        <img src={resident.photo_url} alt="" className="h-9 w-9 rounded-full object-cover border border-slate-200 shrink-0" />
+                      {resident.photo_url && photoUrls.get(resident.photo_url) ? (
+                        <img src={photoUrls.get(resident.photo_url)} alt="" className="h-9 w-9 rounded-full object-cover border border-slate-200 shrink-0" />
                       ) : (
                         <div className="h-9 w-9 rounded-full bg-blue-50 flex items-center justify-center text-sm font-bold text-blue-500 shrink-0">
                           {resident.first_name?.[0]}{resident.last_name?.[0]}

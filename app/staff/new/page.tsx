@@ -32,10 +32,7 @@ export default async function NewStaffPage({ searchParams }: { searchParams: Pro
       const safeName = photoFile.name.replace(/[^a-zA-Z0-9._-]/g, "-");
       const filePath = `${p.facility_id}/staff-photos/${Date.now()}-${safeName}`;
       const { error: uploadErr } = await db.storage.from("documents").upload(filePath, photoFile, { upsert: false });
-      if (!uploadErr) {
-        const { data: urlData } = db.storage.from("documents").getPublicUrl(filePath);
-        photoUrl = urlData.publicUrl;
-      }
+      if (!uploadErr) photoUrl = filePath;
     }
 
     const { data, error } = await db.from("staff").insert({

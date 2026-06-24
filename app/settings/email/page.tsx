@@ -32,6 +32,7 @@ export default function EmailSettingsPage() {
   const [addonMsg, setAddonMsg]       = useState<{ ok: boolean; text: string } | null>(null);
   const [configLoaded, setConfigLoaded] = useState(false);
   const [setupChoice, setSetupChoice]   = useState<"self" | "concierge" | null>(null);
+  const [smtpPassSet, setSmtpPassSet]   = useState(false);
   const editedRef = useRef(false);
 
   // Read from URL after mount (avoids useSearchParams Suspense requirement)
@@ -44,11 +45,13 @@ export default function EmailSettingsPage() {
     const qs = urlOrgId ? `?orgId=${urlOrgId}` : "";
     fetch(`/api/org/email-settings${qs}`)
       .then(r => r.ok ? r.json() : {})
-      .then(d => {
+      .then((d: Partial<SmtpConfig> & { smtp_pass_set?: boolean }) => {
         // Skip if the user already started typing — don't clobber in-progress
         // edits with the (possibly all-null) saved row once this resolves.
         if (editedRef.current) return;
-        setConfig(prev => ({ ...prev, ...d }));
+        const { smtp_pass_set, ...rest } = d;
+        setConfig(prev => ({ ...prev, ...rest }));
+        setSmtpPassSet(!!smtp_pass_set);
       })
       .finally(() => setConfigLoaded(true));
   }, []);
@@ -134,7 +137,7 @@ export default function EmailSettingsPage() {
     const res = await fetch("/api/org/email-settings", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ to: testTo, ...config }),
+      body: JSON.stringify({ to: testTo, ...config, orgId }),
     });
     const data = await res.json();
     setTestMsg(data.error ? { ok: false, text: data.error } : { ok: true, text: `Test email sent to ${testTo}. Check your inbox!` });
@@ -271,13 +274,16 @@ export default function EmailSettingsPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1.5">Password (App Password for Gmail)</label>
+              <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+                Password (App Password for Gmail)
+                {smtpPassSet && <span className="ml-2 text-xs font-normal text-emerald-600">✓ Saved — leave blank to keep it</span>}
+              </label>
               <div className="relative">
                 <input
                   type={showPass ? "text" : "password"}
                   value={config.smtp_pass}
                   onChange={e => updateConfig({ smtp_pass: e.target.value })}
-                  placeholder="16-character app password"
+                  placeholder={smtpPassSet ? "Leave blank to keep current password" : "16-character app password"}
                   className={`${inp} pr-16`}
                 />
                 <button type="button" onClick={() => setShowPass(s => !s)}
@@ -417,13 +423,16 @@ export default function EmailSettingsPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1.5">Password (App Password for Gmail)</label>
+              <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+                Password (App Password for Gmail)
+                {smtpPassSet && <span className="ml-2 text-xs font-normal text-emerald-600">✓ Saved — leave blank to keep it</span>}
+              </label>
               <div className="relative">
                 <input
                   type={showPass ? "text" : "password"}
                   value={config.smtp_pass}
                   onChange={e => updateConfig({ smtp_pass: e.target.value })}
-                  placeholder="16-character app password"
+                  placeholder={smtpPassSet ? "Leave blank to keep current password" : "16-character app password"}
                   className={`${inp} pr-16`}
                 />
                 <button type="button" onClick={() => setShowPass(s => !s)}

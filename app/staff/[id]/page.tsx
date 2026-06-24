@@ -1,9 +1,12 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 import {
   getComplianceChecklist,
   summarizeChecklist,
 } from "@/lib/compliance/getComplianceChecklist";
+import { getSignedUrl, getSignedUrls } from "@/lib/storage";
+import { getCurrentProfile } from "@/lib/auth/getCurrentProfile";
 import DeleteStaffButton from "./DeleteStaffButton";
 import ActivateStaffButton from "./ActivateStaffButton";
 
@@ -38,11 +41,13 @@ const STATUS_STYLE: Record<string, string> = {
 
 export default async function StaffProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const profile = await getCurrentProfile();
+  if (!profile) redirect("/login");
   const db = admin();
 
   const [staffRes, docsRes, reqsRes] = await Promise.all([
-    db.from("staff").select("*").eq("id", id).maybeSingle(),
-    db.from("documents").select("*").eq("staff_id", id).order("created_at", { ascending: false }),
+    db.from("staff").select("*").eq("id", id).eq("facility_id", profile.facility_id).maybeSingle(),
+    db.from("documents").select("*").eq("staff_id", id).eq("facility_id", profile.facility_id).order("created_at", { ascending: false }),
     db.from("compliance_requirements").select("*, document_types(id,name)").eq("applies_to", "staff"),
   ]);
 
@@ -63,6 +68,9 @@ export default async function StaffProfilePage({ params }: { params: Promise<{ i
       </div>
     );
   }
+
+  const photoDisplayUrl = await getSignedUrl(staffMember.photo_url);
+  const docSignedUrls = await getSignedUrls(documents.map((d) => d.file_url));
 
   const missingRequirements = requirements.filter(
     (req) => !documents.some((doc) => doc.document_type_id === req.document_type_id)
@@ -88,9 +96,9 @@ export default async function StaffProfilePage({ params }: { params: Promise<{ i
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex items-start gap-5">
             {/* Photo */}
-            {staffMember.photo_url ? (
+            {photoDisplayUrl ? (
               <img
-                src={staffMember.photo_url}
+                src={photoDisplayUrl}
                 alt={fullName}
                 className="h-20 w-20 rounded-xl object-cover border-2 border-slate-200 shrink-0"
               />
@@ -233,8 +241,8 @@ export default async function StaffProfilePage({ params }: { params: Promise<{ i
                         <span className={`inline-flex rounded-full px-3 py-1 text-sm font-medium ${s.className}`}>{s.label}</span>
                       </td>
                       <td className="p-3">
-                        {doc.file_url
-                          ? <a href={doc.file_url} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">View</a>
+                        {doc.file_url && docSignedUrls.get(doc.file_url)
+                          ? <a href={docSignedUrls.get(doc.file_url)} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">View</a>
                           : <span className="text-gray-500">No file</span>}
                       </td>
                     </tr>

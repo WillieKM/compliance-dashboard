@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getCurrentProfile } from "@/lib/auth/getCurrentProfile";
 import { createClient } from "@supabase/supabase-js";
+import { getSignedUrl } from "@/lib/storage";
 
 function admin() {
   return createClient(
@@ -34,6 +35,7 @@ export default async function EditStaffPage({
     .maybeSingle();
 
   if (!staffMember) redirect("/staff");
+  const photoDisplayUrl = await getSignedUrl(staffMember.photo_url);
 
   async function updateStaff(formData: FormData) {
     "use server";
@@ -48,10 +50,7 @@ export default async function EditStaffPage({
       const safeName = photoFile.name.replace(/[^a-zA-Z0-9._-]/g, "-");
       const filePath = `${p.facility_id}/staff-photos/${Date.now()}-${safeName}`;
       const { error: uploadErr } = await db2.storage.from("documents").upload(filePath, photoFile, { upsert: false });
-      if (!uploadErr) {
-        const { data: urlData } = db2.storage.from("documents").getPublicUrl(filePath);
-        photoUrl = urlData.publicUrl;
-      }
+      if (!uploadErr) photoUrl = filePath;
     }
     const removePhoto = formData.get("remove_photo") === "1";
     if (removePhoto) photoUrl = null;
@@ -88,8 +87,8 @@ export default async function EditStaffPage({
         <div>
           <label className="block mb-1.5 font-semibold text-slate-700">Photo</label>
           <div className="flex items-center gap-4 mb-3">
-            {staffMember.photo_url ? (
-              <img src={staffMember.photo_url} alt="" className="h-16 w-16 rounded-xl object-cover border border-slate-200" />
+            {photoDisplayUrl ? (
+              <img src={photoDisplayUrl} alt="" className="h-16 w-16 rounded-xl object-cover border border-slate-200" />
             ) : (
               <div className="h-16 w-16 rounded-xl bg-slate-100 border-2 border-dashed border-slate-300 flex items-center justify-center text-xl font-bold text-slate-400">
                 {staffMember.first_name?.[0]}{staffMember.last_name?.[0]}

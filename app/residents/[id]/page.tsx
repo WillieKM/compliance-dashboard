@@ -1,5 +1,15 @@
 import Link from "next/link";
-import { supabase } from "@/lib/supabase";
+import { redirect } from "next/navigation";
+import { createClient } from "@supabase/supabase-js";
+import { getCurrentProfile } from "@/lib/auth/getCurrentProfile";
+import { getSignedUrl, getSignedUrls } from "@/lib/storage";
+
+function admin() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+}
 
 function getDocumentStatus(expirationDate: string | null) {
   if (!expirationDate) {
@@ -43,16 +53,22 @@ export default async function ResidentProfilePage({
 }) {
   const { id } = await params;
 
-  const { data: resident, error } = await supabase
+  const profile = await getCurrentProfile();
+  if (!profile) redirect("/login");
+  const db = admin();
+
+  const { data: resident, error } = await db
     .from("residents")
     .select("*")
     .eq("id", id)
+    .eq("facility_id", profile.facility_id)
     .maybeSingle();
 
-  const { data: documents, error: documentsError } = await supabase
+  const { data: documents, error: documentsError } = await db
     .from("documents")
     .select("*")
-    .eq("resident_id", id);
+    .eq("resident_id", id)
+    .eq("facility_id", profile.facility_id);
 
   if (error) {
     return (
@@ -81,6 +97,9 @@ export default async function ResidentProfilePage({
       </div>
     );
   }
+
+  const photoDisplayUrl = await getSignedUrl(resident.photo_url);
+  const docSignedUrls = await getSignedUrls((documents ?? []).map((d) => d.file_url));
 
   const expiredCount =
     documents?.filter(
@@ -114,8 +133,8 @@ export default async function ResidentProfilePage({
 
       <div className="bg-white rounded-xl shadow p-6 mb-6">
         <div className="flex items-start gap-5 mb-4">
-          {resident.photo_url ? (
-            <img src={resident.photo_url} alt={`${resident.first_name} ${resident.last_name}`}
+          {photoDisplayUrl ? (
+            <img src={photoDisplayUrl} alt={`${resident.first_name} ${resident.last_name}`}
               className="h-20 w-20 rounded-xl object-cover border-2 border-slate-200 shrink-0" />
           ) : (
             <div className="h-20 w-20 rounded-xl bg-blue-50 border-2 border-dashed border-blue-200 flex items-center justify-center text-2xl font-bold text-blue-400 shrink-0">
@@ -247,9 +266,9 @@ export default async function ResidentProfilePage({
                     </td>
 
                     <td className="p-3">
-                      {doc.file_url ? (
+                      {doc.file_url && docSignedUrls.get(doc.file_url) ? (
                         <a
-                          href={doc.file_url}
+                          href={docSignedUrls.get(doc.file_url)}
                           target="_blank"
                           className="text-blue-600 hover:underline"
                         >

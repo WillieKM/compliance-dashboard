@@ -92,10 +92,6 @@ export default async function NewDocumentPage({
 
     if (uploadError) redirect(`${errBase}&error=${encodeURIComponent("Upload failed: " + uploadError.message)}`);
 
-    const { data: publicUrlData } = serverClient.storage
-      .from("documents")
-      .getPublicUrl(filePath);
-
     const { error: insertError } = await serverClient.from("documents").insert({
       facility_id: p.facility_id,
       owner_type: ownerType,
@@ -103,7 +99,7 @@ export default async function NewDocumentPage({
       staff_id: ownerType === "staff" ? staffId : null,
       document_type_id: documentTypeId,
       expiration_date: expirationDate || null,
-      file_url: publicUrlData.publicUrl,
+      file_url: filePath,
       file_name: file.name,
       status: "uploaded",
     });

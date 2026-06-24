@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getCurrentProfile } from "@/lib/auth/getCurrentProfile";
 import { createClient } from "@supabase/supabase-js";
+import { getSignedUrl } from "@/lib/storage";
 
 function admin() {
   return createClient(
@@ -34,6 +35,7 @@ export default async function EditResidentPage({
     .maybeSingle();
 
   if (!resident) redirect("/residents");
+  const photoDisplayUrl = await getSignedUrl(resident.photo_url);
 
   async function updateResident(formData: FormData) {
     "use server";
@@ -47,10 +49,7 @@ export default async function EditResidentPage({
       const safeName = photoFile.name.replace(/[^a-zA-Z0-9._-]/g, "-");
       const filePath = `${p.facility_id}/resident-photos/${Date.now()}-${safeName}`;
       const { error: uploadErr } = await db2.storage.from("documents").upload(filePath, photoFile, { upsert: false });
-      if (!uploadErr) {
-        const { data: urlData } = db2.storage.from("documents").getPublicUrl(filePath);
-        photoUrl = urlData.publicUrl;
-      }
+      if (!uploadErr) photoUrl = filePath;
     }
     if (formData.get("remove_photo") === "1") photoUrl = null;
 
@@ -84,8 +83,8 @@ export default async function EditResidentPage({
         <div>
           <label className="block mb-1.5 font-semibold text-slate-700">Photo</label>
           <div className="flex items-center gap-4 mb-3">
-            {resident.photo_url ? (
-              <img src={resident.photo_url} alt="" className="h-16 w-16 rounded-xl object-cover border border-slate-200" />
+            {photoDisplayUrl ? (
+              <img src={photoDisplayUrl} alt="" className="h-16 w-16 rounded-xl object-cover border border-slate-200" />
             ) : (
               <div className="h-16 w-16 rounded-xl bg-blue-50 border-2 border-dashed border-blue-200 flex items-center justify-center text-xl font-bold text-blue-400">
                 {resident.first_name?.[0]}{resident.last_name?.[0]}

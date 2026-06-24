@@ -38,15 +38,13 @@ export async function POST(request: Request, { params }: { params: Promise<{ tok
 
   if (uploadError) return NextResponse.json({ error: "Upload failed: " + uploadError.message }, { status: 500 });
 
-  const { data: urlData } = db.storage.from("documents").getPublicUrl(filePath);
-
   const { data: doc, error: insertError } = await db.from("documents").insert({
     facility_id:      staff.facility_id,
     owner_type:       "staff",
     staff_id:         staff.id,
     document_type_id: documentTypeId,
     expiration_date:  expirationDate || null,
-    file_url:         urlData.publicUrl,
+    file_url:         filePath,
     file_name:        file.name,
     status:           "uploaded",
   }).select("id, file_name, document_type_id, created_at").single();

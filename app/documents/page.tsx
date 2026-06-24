@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentProfile } from "@/lib/auth/getCurrentProfile";
 import { createClient } from "@/lib/supabase/server";
+import { getSignedUrls } from "@/lib/storage";
 
 export const dynamic = "force-dynamic";
 
@@ -28,6 +29,8 @@ export default async function DocumentsPage() {
     `)
     .eq("facility_id", profile.facility_id)
     .order("created_at", { ascending: false });
+
+  const signedUrls = await getSignedUrls((documents ?? []).map((d) => d.file_url));
 
   return (
     <div>
@@ -75,8 +78,8 @@ export default async function DocumentsPage() {
                   <td className="p-3">{statusBadge(doc.status, doc.expiration_date)}</td>
                   <td className="p-3 text-slate-600">{doc.expiration_date || "No expiry"}</td>
                   <td className="p-3">
-                    {doc.file_url
-                      ? <a href={doc.file_url} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline font-medium">View File</a>
+                    {doc.file_url && signedUrls.get(doc.file_url)
+                      ? <a href={signedUrls.get(doc.file_url)} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline font-medium">View File</a>
                       : <span className="text-slate-400">No file</span>}
                   </td>
                 </tr>
