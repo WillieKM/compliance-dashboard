@@ -49,16 +49,24 @@ export default async function NewDocumentPage({
       ? ["resident", "general"]
       : ["resident", "staff", "general"];
 
-  const { data: documentTypes, error: documentTypesError } = await supabase
+  const { data: allDocumentTypes, error: documentTypesError } = await supabase
     .from("document_types")
-    .select("id, name, category, applies_to")
+    .select("id, name, category, applies_to, care_settings")
     .in("applies_to", appliesToFilter)
     .order("category")
     .order("name");
 
+  // Only show document types relevant to the org's actual care setting(s).
+  // No care_settings on the type at all means it applies everywhere.
+  const orgCareSettings = profile.organizations?.care_settings ?? [];
+  const documentTypes = (allDocumentTypes ?? []).filter((dt) => {
+    const settings = dt.care_settings as string[] | null;
+    return !settings || settings.length === 0 || settings.some((s) => orgCareSettings.includes(s));
+  });
+
   // Group by category for <optgroup> rendering
   const grouped: Record<string, { id: string; name: string }[]> = {};
-  for (const dt of documentTypes ?? []) {
+  for (const dt of documentTypes) {
     const cat = dt.category ?? "Other";
     if (!grouped[cat]) grouped[cat] = [];
     grouped[cat].push({ id: dt.id, name: dt.name });

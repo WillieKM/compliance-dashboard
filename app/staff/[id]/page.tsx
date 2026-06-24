@@ -45,17 +45,27 @@ export default async function StaffProfilePage({ params }: { params: Promise<{ i
   if (!profile) redirect("/login");
   const db = admin();
 
+  const orgCareSettings = profile.organizations?.care_settings ?? [];
+
   const [staffRes, docsRes, reqsRes] = await Promise.all([
     db.from("staff").select("*").eq("id", id).eq("facility_id", profile.facility_id).maybeSingle(),
     db.from("documents").select("*").eq("staff_id", id).eq("facility_id", profile.facility_id).order("created_at", { ascending: false }),
-    db.from("compliance_requirements").select("*, document_types(id,name)").eq("applies_to", "staff"),
+    db.from("compliance_requirements").select("*, document_types(id,name)").eq("applies_to", "staff").in("facility_type", orgCareSettings),
   ]);
 
   const staffMember = staffRes.data;
   const documents   = docsRes.data ?? [];
-  const requirements = reqsRes.data ?? [];
+  // Dedupe — a requirement applying to multiple of the org's settings has
+  // one row per setting, so an org running 2+ settings could see it twice.
+  const seenDocTypes = new Set<string>();
+  const requirements = (reqsRes.data ?? []).filter((req) => {
+    if (!req.document_type_id) return true;
+    if (seenDocTypes.has(req.document_type_id)) return false;
+    seenDocTypes.add(req.document_type_id);
+    return true;
+  });
 
-  const checklist = await getComplianceChecklist("staff", id);
+  const checklist = await getComplianceChecklist("staff", id, profile.organizations?.care_settings ?? []);
   const summary   = summarizeChecklist(checklist);
 
   if (staffRes.error || !staffMember) {

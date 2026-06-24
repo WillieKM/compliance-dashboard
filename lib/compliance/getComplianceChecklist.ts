@@ -70,7 +70,8 @@ export function summarizeChecklist(checklist: ComplianceChecklistItem[]) {
 
 export async function getComplianceChecklist(
   appliesTo: "staff" | "resident",
-  ownerId: string
+  ownerId: string,
+  careSettings: string[] = []
 ): Promise<ComplianceChecklistItem[]> {
  const { data: requirements, error: requirementsError } = await admin()
   .from("compliance_requirements")
@@ -79,19 +80,32 @@ export async function getComplianceChecklist(
     id,
     applies_to,
     document_type_id,
+    facility_type,
     document_types!compliance_requirements_document_type_id_fkey (
       id,
       name
     )
   `
   )
-  .eq("applies_to", appliesTo);
+  .eq("applies_to", appliesTo)
+  .in("facility_type", careSettings);
 
   if (requirementsError) {
     throw new Error(
       `Failed to load compliance requirements: ${requirementsError.message}`
     );
   }
+
+  // A document type that applies to multiple of the org's settings has one
+  // row per setting (facility_type is single-valued) — dedupe so an org
+  // running 2+ settings doesn't see the same requirement listed twice.
+  const seenDocTypes = new Set<string>();
+  const uniqueRequirements = (requirements ?? []).filter((r) => {
+    if (!r.document_type_id) return true;
+    if (seenDocTypes.has(r.document_type_id)) return false;
+    seenDocTypes.add(r.document_type_id);
+    return true;
+  });
 
   let documentsQuery = admin()
     .from("documents")
@@ -122,7 +136,7 @@ export async function getComplianceChecklist(
   }
 
   const checklist =
-    requirements?.map((requirement) => {
+    uniqueRequirements.map((requirement) => {
       const matchingDocuments =
         documents?.filter(
           (doc) =>
@@ -169,7 +183,7 @@ export async function getComplianceChecklist(
           bestDocument.expiration_date
         ),
       };
-    }) || [];
+    });
 
   return checklist;
 }
