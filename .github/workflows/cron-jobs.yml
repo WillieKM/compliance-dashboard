@@ -1,0 +1,39 @@
+name: Scheduled Cron Jobs
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"   # shift reminders — clock-in/out reminders
+    - cron: "0 13 * * *"     # daily check — compliance alerts for expiring/expired docs
+    - cron: "0 15 1 * *"     # monthly report — sent on the 1st of each month
+  workflow_dispatch: {}
+
+env:
+  APP_URL: https://compliance.cyber-node.com
+
+jobs:
+  shift-reminders:
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '*/15 * * * *'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger shift reminders
+        run: |
+          curl -sf -X GET "$APP_URL/api/cron/shift-reminders" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
+
+  daily-check:
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 13 * * *'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger daily check
+        run: |
+          curl -sf -X GET "$APP_URL/api/cron/daily-check" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
+
+  monthly-report:
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 15 1 * *'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger monthly report
+        run: |
+          curl -sf -X GET "$APP_URL/api/cron/monthly-report" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
