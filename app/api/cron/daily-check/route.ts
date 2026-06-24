@@ -18,8 +18,8 @@ function getDiff(dateStr: string) {
 }
 
 function mailer() {
-  const user = process.env.GMAIL_USER;
-  const pass = process.env.GMAIL_APP_PASSWORD;
+  const user = process.env.CONCIERGE_EMAIL_USER;
+  const pass = process.env.CONCIERGE_EMAIL_APP_PASSWORD;
   if (!user || !pass) return null;
   return nodemailer.createTransport({ service: "gmail", auth: { user, pass } });
 }
@@ -98,7 +98,7 @@ export async function GET(request: Request) {
           try {
             const urgency = diff <= 7 ? "🔴 URGENT" : diff <= 14 ? "🟡 ACTION NEEDED" : "📋 REMINDER";
             await transport.sendMail({
-              from: `"CareCompliance" <${process.env.GMAIL_USER}>`,
+              from: `"CareCompliance" <${process.env.CONCIERGE_EMAIL_USER}>`,
               to: staffMember.email,
               subject: `${urgency}: ${doc.file_name} expires in ${diff} days`,
               html: `
@@ -163,7 +163,7 @@ export async function GET(request: Request) {
   const transport = mailer();
   if (adminEmail && transport && alertsCreated > 0) {
     await transport.sendMail({
-      from: `"CareCompliance" <${process.env.GMAIL_USER}>`,
+      from: `"CareCompliance" <${process.env.CONCIERGE_EMAIL_USER}>`,
       to: adminEmail,
       subject: `Daily Compliance Check — ${today}`,
       html: `

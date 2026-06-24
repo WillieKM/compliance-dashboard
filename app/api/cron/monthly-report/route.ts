@@ -34,10 +34,10 @@ export async function GET(request: Request) {
     .from("profiles")
     .select("organization_id, facility_id");
 
-  const transport = process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD
+  const transport = process.env.CONCIERGE_EMAIL_USER && process.env.CONCIERGE_EMAIL_APP_PASSWORD
     ? nodemailer.createTransport({
         service: "gmail",
-        auth: { user: process.env.GMAIL_USER, pass: process.env.GMAIL_APP_PASSWORD },
+        auth: { user: process.env.CONCIERGE_EMAIL_USER, pass: process.env.CONCIERGE_EMAIL_APP_PASSWORD },
       })
     : null;
 
@@ -82,7 +82,7 @@ export async function GET(request: Request) {
     const reviewResidents = residents.filter((r) => r.status === "review");
 
     await transport.sendMail({
-      from: `"CareCompliance" <${process.env.GMAIL_USER}>`,
+      from: `"CareCompliance" <${process.env.CONCIERGE_EMAIL_USER}>`,
       to: adminEmail,
       subject: `${org.name} — Monthly Compliance Report: ${month}`,
       html: `
