@@ -19,7 +19,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
 
   const [staffRes, orgRes] = await Promise.all([
     db.from("staff")
-      .select("id, facility_id, first_name, last_name, email, tax_withholding, signing_token, onboarding_token")
+      .select("id, facility_id, first_name, last_name, email, tax_withholding, signing_token")
       .eq("id", id)
       .maybeSingle(),
     db.from("organizations")
@@ -47,7 +47,6 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
 
   const appUrl    = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
   const signingUrl = `${appUrl}/sign/${signingToken}`;
-  const uploadUrl  = staff.onboarding_token ? `${appUrl}/staff-onboarding/${staff.onboarding_token}` : null;
 
   try {
     await sendWelcomeLetterEmail({
@@ -57,7 +56,6 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
       agencyColor:    org?.primary_color ?? "#1a3a52",
       taxWithholding: staff.tax_withholding ?? "W2",
       signingUrl,
-      uploadUrl,
       smtpConfig:     org ?? undefined,
     });
   } catch (err: unknown) {

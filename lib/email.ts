@@ -156,7 +156,6 @@ export async function sendWelcomeLetterEmail(opts: {
   agencyColor: string;
   taxWithholding: string;
   signingUrl: string;
-  uploadUrl?: string | null;
   smtpConfig?: SmtpConfig;
 }) {
   const from    = getFromAddress(opts.agencyName, opts.smtpConfig);
@@ -180,13 +179,6 @@ export async function sendWelcomeLetterEmail(opts: {
          </ul>
        </div>`;
 
-  const uploadSection = opts.uploadUrl
-    ? `<p style="margin:20px 0 8px;font-size:14px;color:#475569;">Also complete your document upload before your first shift:</p>
-       <div style="text-align:center;">
-         <a href="${opts.uploadUrl}" style="display:inline-block;background:#475569;color:white;padding:12px 28px;border-radius:8px;font-weight:600;font-size:14px;text-decoration:none;">📎 Upload My Documents →</a>
-       </div>`
-    : "";
-
   await send(
     opts.to,
     `Action Required: Review & Sign Your Welcome Letter — ${opts.agencyName}`,
@@ -198,8 +190,7 @@ export async function sendWelcomeLetterEmail(opts: {
        <div style="margin-top:24px;text-align:center;">
          <a href="${opts.signingUrl}" style="display:inline-block;background:${opts.agencyColor};color:white;padding:16px 40px;border-radius:10px;font-weight:700;font-size:17px;text-decoration:none;">✍️ Sign My Welcome Letter →</a>
        </div>
-       <p style="text-align:center;margin-top:10px;font-size:12px;color:#94a3b8;">Works on any device — phone, tablet, or computer. No login required.</p>
-       ${uploadSection}`
+       <p style="text-align:center;margin-top:10px;font-size:12px;color:#94a3b8;">Works on any device — phone, tablet, or computer. No login required.</p>`
     ),
     from,
     opts.smtpConfig,

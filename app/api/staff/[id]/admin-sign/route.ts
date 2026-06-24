@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentProfile } from "@/lib/auth/getCurrentProfile";
 import { createClient } from "@supabase/supabase-js";
-import { sendSignedLetterEmail } from "@/lib/email";
+import { sendSignedLetterEmail, sendStaffOnboardingEmail } from "@/lib/email";
 import { getSignedUrl } from "@/lib/storage";
 
 function admin() {
@@ -84,6 +84,22 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       });
     } catch (e) {
       console.error("Signed letter email failed:", e);
+    }
+
+    // Now that the supervisor has countersigned, send the document-upload email.
+    if (uploadUrl) {
+      try {
+        await sendStaffOnboardingEmail({
+          to:          staff.email,
+          staffName:   `${staff.first_name} ${staff.last_name}`,
+          agencyName:  org?.name ?? "Your Agency",
+          agencyColor: org?.primary_color ?? "#1a3a52",
+          uploadUrl,
+          smtpConfig:  org ?? undefined,
+        });
+      } catch (e) {
+        console.error("Onboarding email failed:", e);
+      }
     }
   }
 

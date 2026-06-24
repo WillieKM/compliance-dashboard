@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getCurrentProfile } from "@/lib/auth/getCurrentProfile";
 import { createClient } from "@supabase/supabase-js";
-import { sendStaffOnboardingEmail } from "@/lib/email";
+import { sendWelcomeLetterEmail } from "@/lib/email";
 
 function admin() {
   return createClient(
@@ -35,6 +35,8 @@ export default async function NewStaffPage({ searchParams }: { searchParams: Pro
       if (!uploadErr) photoUrl = filePath;
     }
 
+    const taxWithholding = String(formData.get("tax_withholding") || "W2");
+
     const { data, error } = await db.from("staff").insert({
       facility_id:      p.facility_id,
       first_name:       String(formData.get("first_name") || ""),
@@ -43,27 +45,30 @@ export default async function NewStaffPage({ searchParams }: { searchParams: Pro
       email:            emailVal,
       phone:            String(formData.get("phone") || "") || null,
       status:           "active",
-      tax_withholding:  String(formData.get("tax_withholding") || "W2"),
+      tax_withholding:  taxWithholding,
       photo_url:        photoUrl,
       signing_token:    crypto.randomUUID(),
       onboarding_token: crypto.randomUUID(),
-    }).select("id, first_name, last_name, onboarding_token").single();
+    }).select("id, first_name, last_name, signing_token").single();
     if (error) redirect(`/staff/new?error=${encodeURIComponent(error.message)}`);
 
-    if (emailVal && data.onboarding_token) {
+    // Email the welcome letter now; the document-upload email goes out
+    // separately once the supervisor counter-signs (see admin-sign route).
+    if (emailVal && data.signing_token) {
       const orgRes = await db.from("organizations").select("name, primary_color").eq("id", p.facility_id).maybeSingle();
       const org = orgRes.data;
       const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
       try {
-        await sendStaffOnboardingEmail({
-          to:          emailVal,
-          staffName:   `${data.first_name} ${data.last_name}`,
-          agencyName:  org?.name ?? "Your Agency",
-          agencyColor: org?.primary_color ?? "#1a3a52",
-          uploadUrl:   `${appUrl}/staff-onboarding/${data.onboarding_token}`,
+        await sendWelcomeLetterEmail({
+          to:             emailVal,
+          staffName:      `${data.first_name} ${data.last_name}`,
+          agencyName:     org?.name ?? "Your Agency",
+          agencyColor:    org?.primary_color ?? "#1a3a52",
+          taxWithholding,
+          signingUrl:     `${appUrl}/sign/${data.signing_token}`,
         });
       } catch (e) {
-        console.error("Onboarding email failed:", e);
+        console.error("Welcome letter email failed:", e);
       }
     }
 
@@ -127,7 +132,7 @@ export default async function NewStaffPage({ searchParams }: { searchParams: Pro
 
           <div className="flex gap-3 pt-2">
             <button type="submit" className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 font-semibold">
-              Save &amp; Generate Welcome Letter
+              Save &amp; Email Welcome Letter
             </button>
             <Link href="/staff" className="px-6 py-3 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-50 font-semibold">
               Cancel

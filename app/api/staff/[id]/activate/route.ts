@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentProfile } from "@/lib/auth/getCurrentProfile";
 import { createClient } from "@supabase/supabase-js";
-import { sendStaffOnboardingEmail } from "@/lib/email";
+import { sendWelcomeLetterEmail } from "@/lib/email";
 
 function admin() {
   return createClient(
@@ -19,7 +19,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
 
   const { data: staff } = await db
     .from("staff")
-    .select("id, facility_id, first_name, last_name, email, status, onboarding_token, signing_token")
+    .select("id, facility_id, first_name, last_name, email, status, tax_withholding, onboarding_token, signing_token")
     .eq("id", id)
     .maybeSingle();
 
@@ -39,7 +39,8 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  // Send onboarding email if staff has an email address
+  // Email the welcome letter now; the document-upload email goes out
+  // separately once the supervisor counter-signs (see admin-sign route).
   if (staff.email) {
     const [orgRes] = await Promise.all([
       db.from("organizations")
@@ -51,16 +52,17 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
     try {
-      await sendStaffOnboardingEmail({
-        to:          staff.email,
-        staffName:   `${staff.first_name} ${staff.last_name}`,
-        agencyName:  org?.name ?? "Your Agency",
-        agencyColor: org?.primary_color ?? "#1a3a52",
-        uploadUrl:   `${appUrl}/staff-onboarding/${onboardingToken}`,
-        smtpConfig:  org ?? undefined,
+      await sendWelcomeLetterEmail({
+        to:             staff.email,
+        staffName:      `${staff.first_name} ${staff.last_name}`,
+        agencyName:     org?.name ?? "Your Agency",
+        agencyColor:    org?.primary_color ?? "#1a3a52",
+        taxWithholding: staff.tax_withholding ?? "W2",
+        signingUrl:     `${appUrl}/sign/${signingToken}`,
+        smtpConfig:     org ?? undefined,
       });
     } catch (e) {
-      console.error("Onboarding email failed:", e);
+      console.error("Welcome letter email failed:", e);
     }
   }
 
