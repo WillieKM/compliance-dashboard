@@ -196,7 +196,7 @@ export default async function ALVisitsPage() {
                           : <span className="text-xs text-slate-400">Pending</span>}
                       </td>
                       <td className="p-3 text-right">
-                        <Link href={`/dashboard/home-care/visits/${v.id}`} className="text-xs font-semibold hover:underline" style={{ color: purple }}>
+                        <Link href={`/dashboard/assisted-living/visits/${v.id}`} className="text-xs font-semibold hover:underline" style={{ color: purple }}>
                           View →
                         </Link>
                       </td>

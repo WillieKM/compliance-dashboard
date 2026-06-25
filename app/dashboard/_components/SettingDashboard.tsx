@@ -4,6 +4,7 @@ import { getDashboardMetrics } from "@/lib/compliance/getDashboardMetrics";
 import { getAlerts } from "@/lib/compliance/getAlerts";
 import { getStaffCompliance } from "@/lib/compliance/getStaffCompliance";
 import { getResidentSummaries } from "@/lib/compliance/getResidentSummaries";
+import { getResidentDocumentCompletion } from "@/lib/compliance/getDocumentTypeCompletion";
 import { getCurrentProfile } from "@/lib/auth/getCurrentProfile";
 import { type CareSetting } from "@/lib/config/careSettings";
 import type { ComplianceAlert, StaffComplianceRecord } from "@/lib/types/compliance";
@@ -29,7 +30,7 @@ export default async function SettingDashboard({ setting }: { setting: CareSetti
   const supabase   = await createClient();
   const appUrl     = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
-  const [metrics, alerts, staff, residents, activeVisitsRes] = await Promise.all([
+  const [metrics, alerts, staff, residents, activeVisitsRes, docCompletion] = await Promise.all([
     getDashboardMetrics(facilityId),
     getAlerts(facilityId),
     getStaffCompliance(facilityId),
@@ -39,6 +40,7 @@ export default async function SettingDashboard({ setting }: { setting: CareSetti
       .eq("facility_id", facilityId)
       .eq("status", "active")
       .order("clock_in_time", { ascending: true }),
+    getResidentDocumentCompletion(facilityId, setting.id),
   ]);
 
   const activeVisits = activeVisitsRes.data ?? [];
@@ -358,26 +360,23 @@ export default async function SettingDashboard({ setting }: { setting: CareSetti
         <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
           <div className="mb-6">
             <h2 className="text-xl font-bold text-slate-900">{setting.shortLabel} — Required Documents</h2>
-            <p className="text-sm text-slate-500 mt-1">Compliance status for all mandatory documentation categories.</p>
+            <p className="text-sm text-slate-500 mt-1">Completion across all residents, based on actual uploaded documents.</p>
           </div>
+          {docCompletion.length === 0 ? (
+            <p className="text-sm text-slate-400">No resident document types configured for this care setting yet.</p>
+          ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {setting.documents.map((doc, i) => {
-              const seed = setting.id.length;
-              const total = 47;
-              const complete = ((seed + i * 7) * 3) % total;
-              const overdue = (seed + i) % 4;
-              const pct = Math.round((complete / total) * 100);
+            {docCompletion.map((doc) => {
+              const { pct, complete, total, overdue } = doc;
               return (
-                <div key={doc.id} className={`rounded-lg border p-4 ${doc.critical ? setting.accentBorder + " " + setting.accentBg : "border-slate-200 bg-slate-50"}`}>
+                <div key={doc.id} className={`rounded-lg border p-4 ${setting.accentBorder} ${setting.accentBg}`}>
                   <div className="flex items-start gap-3 mb-3">
-                    <span className="text-2xl">{doc.icon}</span>
+                    <span className="text-2xl">📄</span>
                     <div>
-                      <p className="font-semibold text-slate-900 text-sm">{doc.label}</p>
-                      {doc.critical && (
-                        <span className={`text-xs font-bold px-2 py-0.5 rounded mt-1 inline-block ${setting.accentText} ${setting.accentBg} border ${setting.accentBorder}`}>
-                          REQUIRED
-                        </span>
-                      )}
+                      <p className="font-semibold text-slate-900 text-sm">{doc.name}</p>
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded mt-1 inline-block ${setting.accentText} ${setting.accentBg} border ${setting.accentBorder}`}>
+                        REQUIRED
+                      </span>
                     </div>
                   </div>
                   <div className="space-y-1.5 text-sm">
@@ -397,6 +396,7 @@ export default async function SettingDashboard({ setting }: { setting: CareSetti
               );
             })}
           </div>
+          )}
         </div>
 
         <StaffSection staff={staff} setting={setting} />
