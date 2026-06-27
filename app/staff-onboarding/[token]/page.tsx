@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 
-type DocType  = { id: string; name: string; category: string | null };
+type DocType  = { id: string; name: string; category: string | null; required: boolean };
 type Uploaded = { id: string; document_type_id: string; file_name: string; created_at: string };
 type OrgInfo  = { name: string; primary_color: string | null; logo_url: string | null };
 
@@ -69,8 +69,11 @@ export default function StaffOnboardingPage() {
       setStates(s => ({ ...s, [docTypeId]: "done" }));
       setUploaded(prev => {
         const next = [...prev.filter(u => u.document_type_id !== docTypeId), json];
-        // Auto-notify admin the first time all docs are uploaded
-        if (data && next.length >= data.docTypes.length && !notifiedRef.current) {
+        // Auto-notify admin the first time all required docs are uploaded
+        // (optional ones, like Staff Training, don't block this).
+        const requiredIds = data?.docTypes.filter(dt => dt.required).map(dt => dt.id) ?? [];
+        const requiredDone = next.filter(u => requiredIds.includes(u.document_type_id)).length;
+        if (data && requiredDone >= requiredIds.length && !notifiedRef.current) {
           notifiedRef.current = true;
           fetch(`/api/staff-onboarding/${token}/complete`, { method: "POST" }).catch(() => {});
           setNotifyState("sent");
@@ -99,9 +102,10 @@ export default function StaffOnboardingPage() {
 
   const color      = data.org?.primary_color ?? "#1a3a52";
   const agencyName = data.org?.name ?? "Your Agency";
-  const totalDocs  = data.docTypes.length;
-  const doneCount  = uploaded.length;
-  const pct        = totalDocs > 0 ? Math.round((doneCount / totalDocs) * 100) : 0;
+  const requiredDocTypes = data.docTypes.filter(dt => dt.required);
+  const totalDocs  = requiredDocTypes.length;
+  const doneCount  = uploaded.filter(u => requiredDocTypes.some(dt => dt.id === u.document_type_id)).length;
+  const pct        = totalDocs > 0 ? Math.round((doneCount / totalDocs) * 100) : 100;
 
   // Group by category
   const grouped: Record<string, DocType[]> = {};
@@ -189,6 +193,9 @@ export default function StaffOnboardingPage() {
                           <p className={`font-semibold text-sm ${isDone ? "text-emerald-800" : "text-slate-800"}`}>
                             {dt.name}
                           </p>
+                          {!dt.required && (
+                            <span className="text-xs font-medium text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">Optional</span>
+                          )}
                         </div>
                         {isDone && doc && (
                           <p className="text-xs text-emerald-600 mt-0.5 ml-6">
@@ -234,7 +241,7 @@ export default function StaffOnboardingPage() {
                     <input
                       ref={el => { fileRefs.current[dt.id] = el; }}
                       type="file"
-                      accept=".pdf,.jpg,.jpeg,.png,.heic,.doc,.docx"
+                      accept="image/*,.pdf,.doc,.docx"
                       className="hidden"
                       onChange={() => handleUpload(dt.id)}
                     />
