@@ -23,7 +23,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ token: 
 
   const [orgRes, docTypesRes, uploadedRes] = await Promise.all([
     db.from("organizations").select("name, primary_color, logo_url, care_settings").eq("id", staff.facility_id).maybeSingle(),
-    db.from("document_types").select("id, name, category, care_settings").in("applies_to", ["staff", "general"]).order("category").order("name"),
+    db.from("document_types").select("id, name, category, care_settings").eq("applies_to", "staff").order("category").order("name"),
     db.from("documents").select("id, document_type_id, file_name, created_at").eq("staff_id", staff.id).eq("owner_type", "staff"),
   ]);
 

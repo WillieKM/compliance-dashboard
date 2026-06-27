@@ -42,12 +42,15 @@ export default async function NewDocumentPage({
   const backHref = getBackHref(ownerType, residentId, staffId);
   const ownerLabel = getOwnerLabel(ownerType);
 
+  // Facility-level docs (Business License, Fire Inspection, etc.) only belong
+  // in the general/facility context — never mixed into a specific staff
+  // member's or resident's document list.
   const appliesToFilter =
     ownerType === "staff"
-      ? ["staff", "general"]
+      ? ["staff"]
       : ownerType === "resident"
-      ? ["resident", "general"]
-      : ["resident", "staff", "general"];
+      ? ["resident"]
+      : ["general"];
 
   const { data: allDocumentTypes, error: documentTypesError } = await supabase
     .from("document_types")
