@@ -245,13 +245,21 @@ export default async function SettingDashboard({ setting }: { setting: CareSetti
               <p className="text-xs text-slate-500 mt-0.5">Monthly drill documentation</p>
               <p className="text-xs mt-1" style={{ color: "#b45309" }}>WAC 388-76-10660 →</p>
             </Link>
-            <Link href="/residents"
+            <Link href="/dashboard/afh/care-plans"
               className="rounded-2xl border-2 p-4 shadow-sm hover:shadow-md transition-all"
               style={{ borderColor: "#b45309", background: "#fffbeb" }}>
               <span className="text-3xl block mb-2">📋</span>
-              <h3 className="font-bold text-slate-900 text-sm">Assessment → Care Plan</h3>
-              <p className="text-xs text-slate-500 mt-0.5">Select a resident to assess</p>
+              <h3 className="font-bold text-slate-900 text-sm">Care Plans (ISP)</h3>
+              <p className="text-xs text-slate-500 mt-0.5">30-day due dates &amp; 6-month reviews</p>
               <p className="text-xs mt-1" style={{ color: "#b45309" }}>WAC 388-76-10415 →</p>
+            </Link>
+            <Link href="/dashboard/afh/rn-delegation"
+              className="rounded-2xl border-2 p-4 shadow-sm hover:shadow-md transition-all"
+              style={{ borderColor: "#b45309", background: "#fffbeb" }}>
+              <span className="text-3xl block mb-2">👩‍⚕️</span>
+              <h3 className="font-bold text-slate-900 text-sm">RN Delegation</h3>
+              <p className="text-xs text-slate-500 mt-0.5">Medication authorization log</p>
+              <p className="text-xs mt-1" style={{ color: "#b45309" }}>WAC 388-76-10530 →</p>
             </Link>
             <Link href="/compliance/personnel"
               className="rounded-2xl border-2 p-4 shadow-sm hover:shadow-md transition-all"
