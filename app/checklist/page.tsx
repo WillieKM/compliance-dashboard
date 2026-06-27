@@ -10,18 +10,33 @@ export default async function ChecklistPage() {
   if (!profile) redirect("/login");
 
   const supabase = await createClient();
+  const orgCareSettings = profile.organizations?.care_settings ?? [];
 
-  const [{ data: requirements }, { data: documents }] = await Promise.all([
-    supabase.from("compliance_requirements").select(`id, applies_to, document_types(id, name, category)`),
+  const [{ data: allRequirements }, { data: documents }] = await Promise.all([
+    supabase.from("compliance_requirements")
+      .select(`id, applies_to, facility_type, document_types(id, name, category)`)
+      .in("facility_type", orgCareSettings),
     supabase.from("documents").select("document_type_id, expiration_date").eq("facility_id", profile.facility_id),
   ]);
 
+  // A requirement applying to multiple of the org's settings has one row per
+  // setting (facility_type is single-valued) — dedupe by document type so an
+  // org running 2+ settings doesn't see the same requirement listed twice.
+  const seenDocTypes = new Set<string>();
+  const requirements = (allRequirements ?? []).filter((req: any) => {
+    const dtId = req.document_types?.id;
+    if (!dtId) return true;
+    if (seenDocTypes.has(dtId)) return false;
+    seenDocTypes.add(dtId);
+    return true;
+  });
+
   const today = new Date().toISOString().split("T")[0];
-  const total = requirements?.length ?? 0;
-  const completed = requirements?.filter((req: any) =>
+  const total = requirements.length;
+  const completed = requirements.filter((req: any) =>
     documents?.some(doc => doc.document_type_id === req.document_types?.id &&
       (!doc.expiration_date || doc.expiration_date >= today))
-  ).length ?? 0;
+  ).length;
   const score = total > 0 ? Math.round((completed / total) * 100) : 0;
 
   return (
@@ -52,7 +67,7 @@ export default async function ChecklistPage() {
             </tr>
           </thead>
           <tbody>
-            {requirements?.map((req: any) => {
+            {requirements.map((req: any) => {
               const doc = documents?.find(d => d.document_type_id === req.document_types?.id);
               const expired = doc?.expiration_date && doc.expiration_date < today;
               const status = !doc ? "missing" : expired ? "expired" : "complete";
@@ -73,7 +88,7 @@ export default async function ChecklistPage() {
                 </tr>
               );
             })}
-            {(!requirements || requirements.length === 0) && (
+            {requirements.length === 0 && (
               <tr><td colSpan={4} className="p-8 text-center text-slate-400">No requirements configured. Add document types in your compliance settings.</td></tr>
             )}
           </tbody>
