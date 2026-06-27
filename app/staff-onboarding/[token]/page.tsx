@@ -12,6 +12,7 @@ type PageData = {
   staffName:  string;
   role:       string | null;
   facilityId: string;
+  photoUrl:   string | null;
   org:        OrgInfo | null;
   docTypes:   DocType[];
   uploaded:   Uploaded[];
@@ -32,12 +33,39 @@ export default function StaffOnboardingPage() {
   const [notifyState, setNotifyState] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const notifiedRef = useRef(false);
 
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const [photoUploading, setPhotoUploading] = useState(false);
+  const [photoError, setPhotoError] = useState("");
+  const photoInputRef = useRef<HTMLInputElement | null>(null);
+
   useEffect(() => {
     fetch(`/api/staff-onboarding/${token}`)
       .then(r => r.ok ? r.json() : null)
-      .then(d => { if (d) { setData(d); setUploaded(d.uploaded); } else setNotFound(true); })
+      .then(d => { if (d) { setData(d); setUploaded(d.uploaded); setPhotoUrl(d.photoUrl); } else setNotFound(true); })
       .catch(() => setNotFound(true));
   }, [token]);
+
+  async function handlePhotoUpload() {
+    const file = photoInputRef.current?.files?.[0];
+    if (!file) return;
+
+    setPhotoUploading(true);
+    setPhotoError("");
+
+    const form = new FormData();
+    form.append("photo", file);
+
+    const res  = await fetch(`/api/staff-onboarding/${token}/photo`, { method: "POST", body: form });
+    const json = await res.json();
+
+    if (json.error) {
+      setPhotoError(json.error);
+    } else {
+      setPhotoUrl(json.photoUrl);
+    }
+    setPhotoUploading(false);
+    if (photoInputRef.current) photoInputRef.current.value = "";
+  }
 
   async function notifySupervisor() {
     setNotifyState("sending");
@@ -137,6 +165,38 @@ export default function StaffOnboardingPage() {
           <p className="text-slate-600 text-sm mt-3">
             Please upload all required documents below. You can come back to this page at any time using this link — no login required.
           </p>
+        </div>
+
+        {/* Profile photo */}
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+          <p className="font-semibold text-slate-700 text-sm mb-3">Profile Photo</p>
+          <div className="flex items-center gap-4">
+            {photoUrl ? (
+              <img src={photoUrl} alt="" className="h-16 w-16 rounded-xl object-cover border border-slate-200 shrink-0" />
+            ) : (
+              <div className="h-16 w-16 rounded-xl bg-slate-100 border-2 border-dashed border-slate-300 flex items-center justify-center text-xl shrink-0">
+                🙂
+              </div>
+            )}
+            <div className="flex-1">
+              <button
+                onClick={() => photoInputRef.current?.click()}
+                disabled={photoUploading}
+                className="text-xs font-bold px-3 py-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60"
+              >
+                {photoUploading ? "Uploading…" : photoUrl ? "Replace Photo" : "Add Photo"}
+              </button>
+              <p className="text-xs text-slate-400 mt-1.5">Helps your supervisor recognize you. Optional.</p>
+              {photoError && <p className="text-xs text-red-600 mt-1">{photoError}</p>}
+            </div>
+            <input
+              ref={photoInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handlePhotoUpload}
+            />
+          </div>
         </div>
 
         {/* Progress */}
