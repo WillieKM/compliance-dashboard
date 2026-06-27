@@ -258,7 +258,7 @@ export default function EmailSettingsPage() {
               <div className="sm:col-span-2">
                 <label className="block text-sm font-semibold text-slate-700 mb-1.5">SMTP Host</label>
                 <input type="text" value={config.smtp_host} onChange={e => updateConfig({ smtp_host: e.target.value })}
-                  placeholder="smtp.gmail.com" className={inp} />
+                  placeholder="smtp.gmail.com" required className={inp} />
               </div>
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-1.5">Port</label>
@@ -270,7 +270,7 @@ export default function EmailSettingsPage() {
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-1.5">Username (your email address)</label>
               <input type="email" value={config.smtp_user} onChange={e => updateConfig({ smtp_user: e.target.value })}
-                placeholder="yourname@youragency.com" className={inp} />
+                placeholder="yourname@youragency.com" required className={inp} />
             </div>
 
             <div>
@@ -284,6 +284,7 @@ export default function EmailSettingsPage() {
                   value={config.smtp_pass}
                   onChange={e => updateConfig({ smtp_pass: e.target.value })}
                   placeholder={smtpPassSet ? "Leave blank to keep current password" : "16-character app password"}
+                  required={!smtpPassSet}
                   className={`${inp} pr-16`}
                 />
                 <button type="button" onClick={() => setShowPass(s => !s)}
@@ -407,7 +408,7 @@ export default function EmailSettingsPage() {
               <div className="sm:col-span-2">
                 <label className="block text-sm font-semibold text-slate-700 mb-1.5">SMTP Host</label>
                 <input type="text" value={config.smtp_host} onChange={e => updateConfig({ smtp_host: e.target.value })}
-                  placeholder="smtp.gmail.com" className={inp} />
+                  placeholder="smtp.gmail.com" required className={inp} />
               </div>
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-1.5">Port</label>
@@ -419,7 +420,7 @@ export default function EmailSettingsPage() {
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-1.5">Username (your email address)</label>
               <input type="email" value={config.smtp_user} onChange={e => updateConfig({ smtp_user: e.target.value })}
-                placeholder="yourname@youragency.com" className={inp} />
+                placeholder="yourname@youragency.com" required className={inp} />
             </div>
 
             <div>
@@ -433,6 +434,7 @@ export default function EmailSettingsPage() {
                   value={config.smtp_pass}
                   onChange={e => updateConfig({ smtp_pass: e.target.value })}
                   placeholder={smtpPassSet ? "Leave blank to keep current password" : "16-character app password"}
+                  required={!smtpPassSet}
                   className={`${inp} pr-16`}
                 />
                 <button type="button" onClick={() => setShowPass(s => !s)}

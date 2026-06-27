@@ -39,6 +39,15 @@ export async function POST(request: Request) {
   const isSuperAdminOverride = !!orgId && profile.is_super_admin;
   const targetOrgId = isSuperAdminOverride ? orgId : profile.facility_id;
 
+  // A host with no username (or vice versa) silently produces a config that
+  // never sends — createMailer() requires all three. Catch it before saving.
+  if (!!smtp_host !== !!smtp_user) {
+    return NextResponse.json(
+      { error: "SMTP Host and Username must both be filled in (or both left blank)." },
+      { status: 400 }
+    );
+  }
+
   const db = admin();
 
   // Only flip a pending concierge request to "active" — never invent a paid
