@@ -16,6 +16,7 @@ const navItems = [
   { label: "Residents",  href: "/residents" },
   { label: "Documents",  href: "/documents" },
   { label: "Alerts",     href: "/alerts" },
+  { label: "Messages",   href: "/messages" },
   { label: "Checklist",  href: "/checklist" },
   { label: "Billing",    href: "/billing" },
 ];

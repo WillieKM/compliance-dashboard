@@ -16,7 +16,8 @@ const NOTE_TYPES = ["Daily Note", "Medication Note", "Incident Report", "Care Pl
 
 type OrgBrand = { name: string; primary_color: string | null; logo_url: string | null; tagline: string | null };
 type Person   = { id: string; first_name: string; last_name: string; address?: string | null };
-type Step     = "select" | "in" | "report" | "notes_only" | "done";
+type Step     = "select" | "in" | "report" | "notes_only" | "messages" | "done";
+type ThreadMessage = { id: string; sender_role: string; sender_name: string; body: string; created_at: string };
 
 export default function CaregiverPortalPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -56,6 +57,11 @@ export default function CaregiverPortalPage() {
   const [noteType, setNoteType]   = useState("Daily Note");
   const [standaloneNote, setStandaloneNote] = useState("");
 
+  // Messages state
+  const [threadMessages, setThreadMessages] = useState<ThreadMessage[]>([]);
+  const [newMessageBody, setNewMessageBody] = useState("");
+  const [sendingMessage, setSendingMessage] = useState(false);
+
   useEffect(() => {
     async function load() {
       const [orgRes, staffRes, resRes] = await Promise.all([
@@ -69,6 +75,35 @@ export default function CaregiverPortalPage() {
     }
     load();
   }, [slug]);
+
+  // Poll the office thread every 20s while the Messages screen is open
+  useEffect(() => {
+    if (step !== "messages" || !staffId) return;
+    let cancelled = false;
+    async function load() {
+      const res = await fetch(`/api/portal/${slug}/messages?staffId=${staffId}`);
+      const data = await res.json();
+      if (!cancelled && data.messages) setThreadMessages(data.messages);
+    }
+    load();
+    const interval = setInterval(load, 20000);
+    return () => { cancelled = true; clearInterval(interval); };
+  }, [step, staffId, slug]);
+
+  async function sendMessage() {
+    if (!newMessageBody.trim() || !staffId) return;
+    setSendingMessage(true);
+    const res = await fetch(`/api/portal/${slug}/messages`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ staffId, senderName: caregiverName, body: newMessageBody }),
+    });
+    if (res.ok) {
+      setNewMessageBody("");
+      const updated = await fetch(`/api/portal/${slug}/messages?staffId=${staffId}`).then(r => r.json());
+      if (updated.messages) setThreadMessages(updated.messages);
+    }
+    setSendingMessage(false);
+  }
 
   function getGPS() {
     setGpsStatus("getting");
@@ -273,6 +308,38 @@ export default function CaregiverPortalPage() {
     </div>
   );
 
+  // Messages with the office
+  if (step === "messages") return (
+    <div className="min-h-screen pb-12 flex flex-col" style={{ background: "#f0f4f8" }}><Hdr subtitle="Messages" />
+      <div className="max-w-md mx-auto px-4 pt-5 flex-1 flex flex-col w-full">
+        <div className="flex-1 space-y-3 mb-4 overflow-y-auto">
+          {threadMessages.length === 0 ? (
+            <p className="text-center text-sm text-slate-400 mt-8">No messages yet — send one to the office below.</p>
+          ) : threadMessages.map(m => (
+            <div key={m.id} className={`flex ${m.sender_role === "office" ? "justify-start" : "justify-end"}`}>
+              <div className={`max-w-[80%] rounded-xl px-3.5 py-2.5 text-sm ${m.sender_role === "office" ? "bg-slate-200 text-slate-800" : "text-white"}`} style={m.sender_role !== "office" ? { backgroundColor: color } : undefined}>
+                <p className="whitespace-pre-wrap">{m.body}</p>
+                <p className="text-[11px] mt-1 opacity-70">{new Date(m.created_at).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="flex gap-2 pb-2">
+          <input type="text" value={newMessageBody} onChange={e => setNewMessageBody(e.target.value)}
+            onKeyDown={e => { if (e.key === "Enter") sendMessage(); }}
+            placeholder="Type a message…" className={`${inp} flex-1`} />
+          <button onClick={sendMessage} disabled={sendingMessage || !newMessageBody.trim()}
+            className="px-5 rounded-xl font-bold text-white disabled:opacity-50" style={{ backgroundColor: color }}>
+            Send
+          </button>
+        </div>
+        <button onClick={() => setStep("select")} className="w-full py-3 text-sm text-slate-500 hover:text-slate-700">
+          ← Back
+        </button>
+      </div>
+    </div>
+  );
+
   // Step: select caregiver / client / GPS
   return (
     <div className="min-h-screen pb-12" style={{ background: "#f0f4f8" }}><Hdr subtitle="Caregiver Portal" />
@@ -330,6 +397,11 @@ export default function CaregiverPortalPage() {
         <button onClick={() => { setError(null); setStep("notes_only"); }}
           className="w-full rounded-2xl py-3.5 text-base font-bold border-2 border-slate-300 text-slate-700 hover:border-blue-400 hover:text-blue-700 hover:bg-blue-50 transition-colors">
           📝 Submit Notes Only
+        </button>
+
+        <button onClick={() => { if (!staffId) { setError("Select your name from the list above to message the office."); return; } setError(null); setStep("messages"); }}
+          className="w-full rounded-2xl py-3.5 text-base font-bold border-2 border-slate-300 text-slate-700 hover:border-blue-400 hover:text-blue-700 hover:bg-blue-50 transition-colors">
+          💬 Message the Office
         </button>
       </div>
     </div>

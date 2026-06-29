@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getCurrentProfile } from "@/lib/auth/getCurrentProfile";
 import { createClient } from "@supabase/supabase-js";
+import { geocodeAddress } from "@/lib/geocoding";
 
 function admin() {
   return createClient(
@@ -33,13 +34,31 @@ export default async function NewResidentPage({ searchParams }: { searchParams: 
       if (!uploadErr) photoUrl = filePath;
     }
 
+    const address  = String(formData.get("address") || "") || null;
+    const manualLat = String(formData.get("lat") || "").trim();
+    const manualLng = String(formData.get("lng") || "").trim();
+
+    let lat: number | null = null;
+    let lng: number | null = null;
+    let geocodedAt: string | null = null;
+
+    if (manualLat && manualLng) {
+      lat = parseFloat(manualLat);
+      lng = parseFloat(manualLng);
+    } else if (address) {
+      const geo = await geocodeAddress(address);
+      if (geo) { lat = geo.lat; lng = geo.lng; geocodedAt = new Date().toISOString(); }
+    }
+
     const { error } = await db.from("residents").insert({
       facility_id:  p.facility_id,
       first_name:   String(formData.get("first_name") || ""),
       last_name:    String(formData.get("last_name") || ""),
       status:       String(formData.get("status") || "Active"),
       room_number:  String(formData.get("room_number") || "") || null,
-      address:      String(formData.get("address") || "") || null,
+      address,
+      lat, lng,
+      geocoded_at:  geocodedAt,
       photo_url:    photoUrl,
     });
     if (error) redirect(`/residents/new?error=${encodeURIComponent(error.message)}`);
@@ -90,8 +109,23 @@ export default async function NewResidentPage({ searchParams }: { searchParams: 
         <div>
           <label className="block mb-1.5 font-medium text-slate-700">Client Address</label>
           <input type="text" name="address" placeholder="e.g. 123 Main St, Seattle, WA 98101" className={inp} />
-          <p className="mt-1.5 text-xs text-slate-400">Shown to caregivers on clock-in. Enables GPS location verification.</p>
+          <p className="mt-1.5 text-xs text-slate-400">Auto-located for GPS clock-in verification. Override below if it's ever off.</p>
         </div>
+
+        <details className="rounded-lg border border-slate-200 p-3">
+          <summary className="text-sm font-medium text-slate-600 cursor-pointer">Advanced: GPS coordinates override</summary>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-3">
+            <div>
+              <label className="block mb-1.5 text-sm text-slate-600">Latitude</label>
+              <input type="text" name="lat" placeholder="e.g. 47.6062" className={inp} />
+            </div>
+            <div>
+              <label className="block mb-1.5 text-sm text-slate-600">Longitude</label>
+              <input type="text" name="lng" placeholder="e.g. -122.3321" className={inp} />
+            </div>
+          </div>
+          <p className="mt-1.5 text-xs text-slate-400">Leave blank to auto-locate from the address above.</p>
+        </details>
 
         <div className="flex gap-3 pt-2">
           <button type="submit" className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700">

@@ -13,6 +13,17 @@ function admin() {
 
 export const dynamic = "force-dynamic";
 
+const SKILLS = [
+  { value: "personal_care",     label: "Personal Care" },
+  { value: "skilled_nursing",   label: "Skilled Nursing" },
+  { value: "therapy",           label: "Therapy" },
+  { value: "companionship",     label: "Companionship" },
+  { value: "medication_assist", label: "Medication Assist" },
+  { value: "housekeeping",      label: "Housekeeping" },
+];
+
+const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
 export default async function EditStaffPage({
   params,
   searchParams,
@@ -37,6 +48,13 @@ export default async function EditStaffPage({
   if (!staffMember) redirect("/staff");
   const photoDisplayUrl = await getSignedUrl(staffMember.photo_url);
 
+  const { data: availability } = await db
+    .from("staff_availability")
+    .select("day_of_week, start_time, end_time")
+    .eq("staff_id", id)
+    .eq("facility_id", profile.facility_id);
+  const availabilityByDay = new Map((availability ?? []).map(a => [a.day_of_week, a]));
+
   async function updateStaff(formData: FormData) {
     "use server";
     const p = await getCurrentProfile();
@@ -55,6 +73,8 @@ export default async function EditStaffPage({
     const removePhoto = formData.get("remove_photo") === "1";
     if (removePhoto) photoUrl = null;
 
+    const skills = formData.getAll("skills").map(String);
+
     const { error } = await db2.from("staff").update({
       first_name:      String(formData.get("first_name") || ""),
       last_name:       String(formData.get("last_name") || ""),
@@ -64,9 +84,26 @@ export default async function EditStaffPage({
       status:          String(formData.get("status") || "active"),
       tax_withholding: String(formData.get("tax_withholding") || "W2"),
       photo_url:       photoUrl,
+      skills,
     }).eq("id", id).eq("facility_id", p.facility_id);
 
     if (error) redirect(`/staff/${id}/edit?error=${encodeURIComponent(error.message)}`);
+
+    // Replace availability rows wholesale — simplest correct way to handle
+    // a fixed 7-day form where any day's times may have been cleared.
+    await db2.from("staff_availability").delete().eq("staff_id", id).eq("facility_id", p.facility_id);
+    const availabilityRows = DAYS
+      .map((_, dayOfWeek) => ({
+        day_of_week: dayOfWeek,
+        start_time:  String(formData.get(`availability_start_${dayOfWeek}`) || "") || null,
+        end_time:    String(formData.get(`availability_end_${dayOfWeek}`) || "") || null,
+      }))
+      .filter(r => r.start_time && r.end_time)
+      .map(r => ({ ...r, facility_id: p.facility_id, staff_id: id }));
+    if (availabilityRows.length > 0) {
+      await db2.from("staff_availability").insert(availabilityRows);
+    }
+
     redirect(`/staff/${id}`);
   }
 
@@ -149,6 +186,36 @@ export default async function EditStaffPage({
               <option value="W2">W-2 Employee</option>
               <option value="1099">1099 Independent Contractor</option>
             </select>
+          </div>
+        </div>
+
+        <div>
+          <label className="block mb-1.5 font-semibold text-slate-700">Skills</label>
+          <p className="text-xs text-slate-400 mb-2">Used to suggest the best-matched caregiver when scheduling a shift.</p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {SKILLS.map(s => (
+              <label key={s.value} className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+                <input type="checkbox" name="skills" value={s.value} defaultChecked={(staffMember.skills ?? []).includes(s.value)} className="accent-blue-600" />
+                {s.label}
+              </label>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <label className="block mb-1.5 font-semibold text-slate-700">Weekly Availability</label>
+          <p className="text-xs text-slate-400 mb-2">Optional. Leave a day blank if there's no set window — unset days are treated as unconstrained, not unavailable.</p>
+          <div className="space-y-2">
+            {DAYS.map((day, i) => {
+              const existing = availabilityByDay.get(i);
+              return (
+                <div key={day} className="grid grid-cols-3 gap-2 items-center">
+                  <span className="text-sm text-slate-600">{day}</span>
+                  <input type="time" name={`availability_start_${i}`} defaultValue={existing?.start_time ?? ""} className={inp} />
+                  <input type="time" name={`availability_end_${i}`} defaultValue={existing?.end_time ?? ""} className={inp} />
+                </div>
+              );
+            })}
           </div>
         </div>
 

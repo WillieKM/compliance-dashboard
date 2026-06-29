@@ -306,6 +306,38 @@ export async function sendDocumentsCompleteEmail(opts: {
   );
 }
 
+// ─── New Message Notification ──────────────────────────────────────────────────
+
+export async function sendNewMessageNotificationEmail(opts: {
+  to: string;
+  agencyName: string;
+  agencyColor: string;
+  senderName: string;
+  senderRole: "caregiver" | "family";
+  body: string;
+  threadUrl: string;
+  smtpConfig?: SmtpConfig;
+}) {
+  const from = getFromAddress(opts.agencyName, opts.smtpConfig);
+  const roleLabel = opts.senderRole === "caregiver" ? "a caregiver" : "a family member";
+
+  await send(
+    opts.to,
+    `💬 New message from ${opts.senderName} — ${opts.agencyName}`,
+    wrap(opts.agencyColor, opts.agencyName, "New Message",
+      `<p style="font-size:15px;color:#475569;"><strong>${opts.senderName}</strong> (${roleLabel}) sent a new message:</p>
+       <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px 18px;margin:16px 0;">
+         <p style="margin:0;font-size:14px;color:#1e293b;white-space:pre-wrap;">${opts.body}</p>
+       </div>
+       <div style="margin-top:24px;text-align:center;">
+         <a href="${opts.threadUrl}" style="display:inline-block;background:${opts.agencyColor};color:white;padding:14px 32px;border-radius:10px;font-weight:700;font-size:15px;text-decoration:none;">Reply →</a>
+       </div>`
+    ),
+    from,
+    opts.smtpConfig,
+  );
+}
+
 // ─── Shared HTML wrapper ──────────────────────────────────────────────────────
 
 function wrap(color: string, agency: string, title: string, body: string): string {

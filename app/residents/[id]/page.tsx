@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 import { getCurrentProfile } from "@/lib/auth/getCurrentProfile";
 import { getSignedUrl, getSignedUrls } from "@/lib/storage";
+import FamilyPortalLinkBlock from "./FamilyPortalLinkBlock";
 
 function admin() {
   return createClient(
@@ -146,7 +147,14 @@ export default async function ResidentProfilePage({
               {resident.first_name} {resident.last_name}
             </h1>
             {resident.address && (
-              <p className="text-sm text-slate-500 mt-1">📍 {resident.address}</p>
+              <p className="text-sm text-slate-500 mt-1 flex items-center gap-2">
+                📍 {resident.address}
+                {resident.lat && resident.lng ? (
+                  <span className="text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded">✓ Located</span>
+                ) : (
+                  <span className="text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded">⚠ Not located</span>
+                )}
+              </p>
             )}
           </div>
         </div>
@@ -201,6 +209,8 @@ export default async function ResidentProfilePage({
           </div>
         </div>
       </div>
+
+      <FamilyPortalLinkBlock residentId={resident.id} initialToken={resident.family_portal_token ?? null} />
 
       <div className="bg-white rounded-xl shadow p-6">
         <div className="flex items-center justify-between mb-4">

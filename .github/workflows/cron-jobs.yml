@@ -5,6 +5,7 @@ on:
     - cron: "*/15 * * * *"   # shift reminders — clock-in/out reminders
     - cron: "0 13 * * *"     # daily check — compliance alerts for expiring/expired docs
     - cron: "0 15 1 * *"     # monthly report — sent on the 1st of each month
+    - cron: "0 11 * * *"     # note risk scan — nightly AI review of caregiver notes
   workflow_dispatch: {}
 
 env:
@@ -36,4 +37,13 @@ jobs:
       - name: Trigger monthly report
         run: |
           curl -sf -X GET "$APP_URL/api/cron/monthly-report" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
+
+  note-risk-scan:
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 11 * * *'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger note risk scan
+        run: |
+          curl -sf -X GET "$APP_URL/api/cron/note-risk-scan" \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"

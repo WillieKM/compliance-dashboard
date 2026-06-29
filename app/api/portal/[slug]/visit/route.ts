@@ -30,20 +30,34 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
   }
 
+  // Geo-fence check against a resident's stored coordinates; logs a
+  // dashboard alert (in addition to the visit note) so it isn't missed.
+  async function checkGeoFence(residentId: string | null | undefined, lat: number | null, lng: number | null, caregiverName: string, when: "clock-in" | "clock-out") {
+    if (!lat || !lng || !residentId) return null;
+    const { data: resident } = await db.from("residents")
+      .select("lat, lng, first_name, last_name").eq("id", residentId).maybeSingle();
+    if (!resident?.lat || !resident?.lng) return null;
+
+    const miles = distanceMiles(lat, lng, resident.lat, resident.lng);
+    if (miles <= 0.5) return null;
+
+    const warning = `Caregiver is ${miles.toFixed(1)} miles from client address`;
+    await db.from("alerts").insert({
+      facility_id: facilityId,
+      resident_id: residentId,
+      alert_type: "geo_warning",
+      title: `GPS mismatch at ${when} — ${resident.first_name} ${resident.last_name}`,
+      message: `${caregiverName} was ${miles.toFixed(1)} miles from ${resident.first_name} ${resident.last_name}'s address at ${when}.`,
+      due_date: new Date().toISOString().split("T")[0],
+    });
+    return warning;
+  }
+
   // ── Clock In ──────────────────────────────────────────────────────
   if (action === "clock_in") {
     const { caregiverName, clientName, staffId, residentId, lat, lng, shiftId } = body;
 
-    // Geo-fence: check if caregiver is within 0.5 miles of client's address (if resident has coordinates)
-    let geoWarning = null;
-    if (lat && lng && residentId) {
-      const { data: resident } = await db.from("residents")
-        .select("lat, lng").eq("id", residentId).maybeSingle();
-      if (resident?.lat && resident?.lng) {
-        const miles = distanceMiles(lat, lng, resident.lat, resident.lng);
-        if (miles > 0.5) geoWarning = `Caregiver is ${miles.toFixed(1)} miles from client address`;
-      }
-    }
+    const geoWarning = await checkGeoFence(residentId, lat ?? null, lng ?? null, caregiverName, "clock-in");
 
     const { data: visit, error } = await db.from("care_visits").insert({
       facility_id: facilityId,
@@ -66,20 +80,26 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
   // ── Clock Out ─────────────────────────────────────────────────────
   if (action === "clock_out") {
     const { visitId, lat, lng } = body;
-    const { data: v } = await db.from("care_visits").select("clock_in_time").eq("id", visitId).single();
+    const { data: v } = await db.from("care_visits")
+      .select("clock_in_time, resident_id, caregiver_name, notes").eq("id", visitId).single();
     const now = new Date().toISOString();
     const mins = v?.clock_in_time
       ? Math.round((new Date(now).getTime() - new Date(v.clock_in_time).getTime()) / 60000)
       : null;
+
+    const geoWarning = v ? await checkGeoFence(v.resident_id, lat ?? null, lng ?? null, v.caregiver_name, "clock-out") : null;
+    const notes = geoWarning ? `${v?.notes ? v.notes + " " : ""}[GEO WARNING] ${geoWarning}` : v?.notes ?? null;
+
     const { error } = await db.from("care_visits").update({
       clock_out_time: now,
       clock_out_lat: lat ?? null,
       clock_out_lng: lng ?? null,
       status: "completed",
       duration_minutes: mins,
+      notes,
     }).eq("id", visitId);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true, geoWarning });
   }
 
   // ── Submit Service Report ─────────────────────────────────────────
