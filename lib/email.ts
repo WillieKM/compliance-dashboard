@@ -338,6 +338,38 @@ export async function sendNewMessageNotificationEmail(opts: {
   );
 }
 
+// ─── Office-Initiated Message Notification ──────────────────────────────────────
+
+// Sent only for the first message in a new office-started thread (caregiver
+// or family) — replies in an already-active thread don't re-notify, since
+// the recipient is presumably already checking the portal.
+export async function sendOfficeMessageNotificationEmail(opts: {
+  to: string;
+  agencyName: string;
+  agencyColor: string;
+  body: string;
+  threadUrl: string;
+  smtpConfig?: SmtpConfig;
+}) {
+  const from = getFromAddress(opts.agencyName, opts.smtpConfig);
+
+  await send(
+    opts.to,
+    `💬 New message from ${opts.agencyName}`,
+    wrap(opts.agencyColor, opts.agencyName, "New Message From the Office",
+      `<p style="font-size:15px;color:#475569;"><strong>${opts.agencyName}</strong> sent you a new message:</p>
+       <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px 18px;margin:16px 0;">
+         <p style="margin:0;font-size:14px;color:#1e293b;white-space:pre-wrap;">${opts.body}</p>
+       </div>
+       <div style="margin-top:24px;text-align:center;">
+         <a href="${opts.threadUrl}" style="display:inline-block;background:${opts.agencyColor};color:white;padding:14px 32px;border-radius:10px;font-weight:700;font-size:15px;text-decoration:none;">View &amp; Reply →</a>
+       </div>`
+    ),
+    from,
+    opts.smtpConfig,
+  );
+}
+
 // ─── Shared HTML wrapper ──────────────────────────────────────────────────────
 
 function wrap(color: string, agency: string, title: string, body: string): string {

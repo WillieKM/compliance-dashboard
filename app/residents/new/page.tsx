@@ -60,6 +60,7 @@ export default async function NewResidentPage({ searchParams }: { searchParams: 
       lat, lng,
       geocoded_at:  geocodedAt,
       photo_url:    photoUrl,
+      family_contact_email: String(formData.get("family_contact_email") || "") || null,
     });
     if (error) redirect(`/residents/new?error=${encodeURIComponent(error.message)}`);
     redirect("/residents");
@@ -110,6 +111,12 @@ export default async function NewResidentPage({ searchParams }: { searchParams: 
           <label className="block mb-1.5 font-medium text-slate-700">Client Address</label>
           <input type="text" name="address" placeholder="e.g. 123 Main St, Seattle, WA 98101" className={inp} />
           <p className="mt-1.5 text-xs text-slate-400">Auto-located for GPS clock-in verification. Override below if it's ever off.</p>
+        </div>
+
+        <div>
+          <label className="block mb-1.5 font-medium text-slate-700">Family Contact Email</label>
+          <input type="email" name="family_contact_email" placeholder="e.g. family@example.com" className={inp} />
+          <p className="mt-1.5 text-xs text-slate-400">Used to notify family when the office sends them a message via the Family Portal.</p>
         </div>
 
         <details className="rounded-lg border border-slate-200 p-3">

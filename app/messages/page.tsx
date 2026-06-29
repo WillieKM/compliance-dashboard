@@ -5,6 +5,7 @@ import { getCurrentProfile } from "@/lib/auth/getCurrentProfile";
 import { createClient as admin } from "@supabase/supabase-js";
 import LiveRefresh from "./LiveRefresh";
 import NewThreadPicker from "./NewThreadPicker";
+import { sendOfficeMessageNotificationEmail } from "@/lib/email";
 
 export const dynamic = "force-dynamic";
 const navy = "#1a3a52";
@@ -88,7 +89,17 @@ export default async function MessagesPage({
     const body = String(formData.get("body") || "").trim();
     if (!channel || !id || !body) return;
 
-    await adminClient().from("messages").insert({
+    const db2 = adminClient();
+    const idColumn = channel === "caregiver" ? "staff_id" : "resident_id";
+
+    // Only notify by email for the first message in a brand-new thread —
+    // replies in an already-active conversation don't re-notify.
+    const { count } = await db2.from("messages")
+      .select("id", { count: "exact", head: true })
+      .eq("facility_id", p.facility_id).eq("channel", channel).eq(idColumn, id);
+    const isFirstMessage = (count ?? 0) === 0;
+
+    await db2.from("messages").insert({
       facility_id: p.facility_id,
       channel,
       staff_id: channel === "caregiver" ? id : null,
@@ -97,6 +108,42 @@ export default async function MessagesPage({
       sender_name: p.full_name ?? p.organizations?.name ?? "Office",
       body,
     });
+
+    if (isFirstMessage) {
+      const { data: org } = await db2.from("organizations")
+        .select("name, slug, primary_color, smtp_host, smtp_port, smtp_user, smtp_pass, smtp_from_name, smtp_from_email")
+        .eq("id", p.facility_id).maybeSingle();
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+
+      if (org && channel === "caregiver") {
+        const { data: staffMember } = await db2.from("staff").select("email").eq("id", id).maybeSingle();
+        if (staffMember?.email) {
+          sendOfficeMessageNotificationEmail({
+            to: staffMember.email,
+            agencyName: org.name ?? "Your Agency",
+            agencyColor: org.primary_color ?? "#1a3a52",
+            body,
+            threadUrl: `${appUrl}/portal/${org.slug}/clock-in`,
+            smtpConfig: org,
+          }).catch(e => console.error("Office message notification failed:", e));
+        }
+      } else if (org && channel === "family") {
+        const { data: resident } = await db2.from("residents").select("family_contact_email, family_portal_token").eq("id", id).maybeSingle();
+        if (resident?.family_contact_email) {
+          const token = resident.family_portal_token ?? crypto.randomUUID();
+          if (!resident.family_portal_token) await db2.from("residents").update({ family_portal_token: token }).eq("id", id);
+          sendOfficeMessageNotificationEmail({
+            to: resident.family_contact_email,
+            agencyName: org.name ?? "Your Agency",
+            agencyColor: org.primary_color ?? "#1a3a52",
+            body,
+            threadUrl: `${appUrl}/family-portal/${token}`,
+            smtpConfig: org,
+          }).catch(e => console.error("Office message notification failed:", e));
+        }
+      }
+    }
+
     revalidatePath("/messages");
   }
 

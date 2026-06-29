@@ -80,6 +80,7 @@ export default async function EditResidentPage({
       lat, lng,
       geocoded_at: geocodedAt,
       photo_url:   photoUrl,
+      family_contact_email: String(formData.get("family_contact_email") || "") || null,
     }).eq("id", id).eq("facility_id", p.facility_id);
 
     if (error) redirect(`/residents/${id}/edit?error=${encodeURIComponent(error.message)}`);
@@ -160,6 +161,12 @@ export default async function EditResidentPage({
                 : "📍 Manually set coordinates in use for GPS clock-in verification."
               : "⚠ Not yet located — GPS clock-in verification won't trigger until this resolves."}
           </p>
+        </div>
+
+        <div>
+          <label className="block mb-1.5 font-semibold text-slate-700">Family Contact Email</label>
+          <input type="email" name="family_contact_email" defaultValue={resident.family_contact_email ?? ""} placeholder="e.g. family@example.com" className={inp} />
+          <p className="mt-1 text-xs text-slate-400">Used to notify family when the office sends them a message via the Family Portal.</p>
         </div>
 
         <details className="rounded-lg border border-slate-200 p-3">
