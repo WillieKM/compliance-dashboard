@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getCurrentProfile } from "@/lib/auth/getCurrentProfile";
 import { createClient as admin } from "@supabase/supabase-js";
 import LiveRefresh from "./LiveRefresh";
+import NewThreadPicker from "./NewThreadPicker";
 
 export const dynamic = "force-dynamic";
 const navy = "#1a3a52";
@@ -62,7 +63,12 @@ export default async function MessagesPage({
   });
 
   const activeThread = activeChannel && activeId
-    ? threadMap.get(`${activeChannel}:${activeId}`)
+    ? threadMap.get(`${activeChannel}:${activeId}`) ?? {
+        channel: activeChannel,
+        id: activeId,
+        name: activeChannel === "caregiver" ? (staffName.get(activeId) ?? "Unknown Caregiver") : (residentName.get(activeId) ?? "Unknown Family"),
+        messages: [] as Message[],
+      }
     : threads[0];
 
   // Mark inbound messages in the open thread as read.
@@ -109,8 +115,12 @@ export default async function MessagesPage({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Thread list */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden lg:col-span-1">
+          <NewThreadPicker
+            staff={(staffList ?? []).map(s => ({ id: s.id, name: `${s.first_name} ${s.last_name}` }))}
+            residents={(residents ?? []).map(r => ({ id: r.id, name: `${r.first_name} ${r.last_name}` }))}
+          />
           {threads.length === 0 ? (
-            <div className="p-8 text-center text-slate-500 text-sm">No messages yet.</div>
+            <div className="p-8 text-center text-slate-500 text-sm">No messages yet — start one above.</div>
           ) : (
             <div className="divide-y divide-slate-100">
               {threads.map(t => {
@@ -144,6 +154,9 @@ export default async function MessagesPage({
                 <p className="font-bold text-slate-900">{activeThread.channel === "caregiver" ? "💬" : "👨‍👩‍👧"} {activeThread.name}</p>
               </div>
               <div className="flex-1 p-4 space-y-3 overflow-y-auto">
+                {activeThread.messages.length === 0 && (
+                  <p className="text-center text-sm text-slate-400 mt-8">No messages yet — send the first one below.</p>
+                )}
                 {activeThread.messages.map(m => (
                   <div key={m.id} className={`flex ${m.sender_role === "office" ? "justify-end" : "justify-start"}`}>
                     <div className={`max-w-[80%] rounded-xl px-3.5 py-2.5 text-sm ${m.sender_role === "office" ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-800"}`}>
