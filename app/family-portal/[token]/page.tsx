@@ -50,7 +50,7 @@ export default function FamilyPortalPage() {
       if (!cancelled && json.messages) setMessages(json.messages);
     }
     load();
-    const interval = setInterval(load, 20000);
+    const interval = setInterval(load, 7000);
     return () => { cancelled = true; clearInterval(interval); };
   }, [senderName, token]);
 

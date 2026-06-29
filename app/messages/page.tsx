@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { getCurrentProfile } from "@/lib/auth/getCurrentProfile";
 import { createClient as admin } from "@supabase/supabase-js";
+import LiveRefresh from "./LiveRefresh";
 
 export const dynamic = "force-dynamic";
 const navy = "#1a3a52";
@@ -99,6 +100,7 @@ export default async function MessagesPage({
 
   return (
     <div className="space-y-6">
+      <LiveRefresh />
       <div className="rounded-2xl p-5 text-white" style={{ background: `linear-gradient(135deg, ${navy}, #274f6e)` }}>
         <h1 className="text-2xl font-bold">Messages</h1>
         <p className="text-white/70 text-sm mt-0.5">Caregiver and family messages, in one place</p>

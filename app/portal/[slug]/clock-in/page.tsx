@@ -86,7 +86,7 @@ export default function CaregiverPortalPage() {
       if (!cancelled && data.messages) setThreadMessages(data.messages);
     }
     load();
-    const interval = setInterval(load, 20000);
+    const interval = setInterval(load, 7000);
     return () => { cancelled = true; clearInterval(interval); };
   }, [step, staffId, slug]);
 

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getCurrentProfile } from "@/lib/auth/getCurrentProfile";
 import { createClient } from "@supabase/supabase-js";
 import { getSignedUrl } from "@/lib/storage";
+import { geocodeAddress } from "@/lib/geocoding";
 
 function admin() {
   return createClient(
@@ -75,6 +76,23 @@ export default async function EditStaffPage({
 
     const skills = formData.getAll("skills").map(String);
 
+    const address   = String(formData.get("address") || "") || null;
+    const manualLat = String(formData.get("lat") || "").trim();
+    const manualLng = String(formData.get("lng") || "").trim();
+
+    let lat        = staffMember!.lat ?? null;
+    let lng        = staffMember!.lng ?? null;
+    let geocodedAt = staffMember!.geocoded_at ?? null;
+
+    if (manualLat && manualLng) {
+      lat = parseFloat(manualLat);
+      lng = parseFloat(manualLng);
+      geocodedAt = null;
+    } else if (address && (address !== staffMember!.address || !lat || !lng)) {
+      const geo = await geocodeAddress(address);
+      if (geo) { lat = geo.lat; lng = geo.lng; geocodedAt = new Date().toISOString(); }
+    }
+
     const { error } = await db2.from("staff").update({
       first_name:      String(formData.get("first_name") || ""),
       last_name:       String(formData.get("last_name") || ""),
@@ -85,6 +103,9 @@ export default async function EditStaffPage({
       tax_withholding: String(formData.get("tax_withholding") || "W2"),
       photo_url:       photoUrl,
       skills,
+      address,
+      lat, lng,
+      geocoded_at: geocodedAt,
     }).eq("id", id).eq("facility_id", p.facility_id);
 
     if (error) redirect(`/staff/${id}/edit?error=${encodeURIComponent(error.message)}`);
@@ -188,6 +209,27 @@ export default async function EditStaffPage({
             </select>
           </div>
         </div>
+
+        <div>
+          <label className="block mb-1.5 font-semibold text-slate-700">Home Address</label>
+          <input type="text" name="address" defaultValue={staffMember.address ?? ""} placeholder="e.g. 456 Oak St, Tacoma, WA 98402" className={inp} />
+          <p className="mt-1 text-xs text-slate-400">Optional. Used to suggest the closest caregiver when scheduling a shift.</p>
+        </div>
+
+        <details className="rounded-lg border border-slate-200 p-3">
+          <summary className="text-sm font-medium text-slate-600 cursor-pointer">Advanced: GPS coordinates override</summary>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-3">
+            <div>
+              <label className="block mb-1.5 text-sm text-slate-600">Latitude</label>
+              <input type="text" name="lat" defaultValue={staffMember.lat ?? ""} placeholder="e.g. 47.2529" className={inp} />
+            </div>
+            <div>
+              <label className="block mb-1.5 text-sm text-slate-600">Longitude</label>
+              <input type="text" name="lng" defaultValue={staffMember.lng ?? ""} placeholder="e.g. -122.4443" className={inp} />
+            </div>
+          </div>
+          <p className="mt-1.5 text-xs text-slate-400">Leave both blank to auto-locate from the address above when it changes.</p>
+        </details>
 
         <div>
           <label className="block mb-1.5 font-semibold text-slate-700">Skills</label>
