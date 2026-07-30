@@ -15,8 +15,6 @@ function timeToMinutes(t: string): number {
 }
 
 export async function GET(request: Request) {
-  // Vercel's own Cron scheduler sends "Authorization: Bearer <CRON_SECRET>";
-  // x-cron-secret is kept for manual/external triggering.
   const isAuthorized =
     request.headers.get("authorization") === `Bearer ${process.env.CRON_SECRET}` ||
     request.headers.get("x-cron-secret") === process.env.CRON_SECRET;
@@ -33,23 +31,33 @@ export async function GET(request: Request) {
   let clockInSent = 0;
   let clockOutSent = 0;
 
-  // Fetch all accepted shifts for today that need reminders
   const { data: shifts } = await db
     .from("shifts")
     .select(`
-      id, start_time, end_time, status,
+      id, start_time, end_time, status, facility_id,
       clock_in_reminder_sent, clock_out_reminder_sent,
       staff(first_name, last_name, email),
-      residents(first_name, last_name, address),
-      organizations!shifts_facility_id_fkey(name, slug, primary_color, smtp_host, smtp_port, smtp_user, smtp_pass, smtp_from_name, smtp_from_email)
+      residents(first_name, last_name, address)
     `)
     .eq("shift_date", todayStr)
     .eq("status", "accepted");
 
-  for (const shift of shifts ?? []) {
-    const org        = shift.organizations as unknown as { name: string; slug: string | null; primary_color: string | null; smtp_host?: string | null; smtp_port?: number | null; smtp_user?: string | null; smtp_pass?: string | null; smtp_from_name?: string | null; smtp_from_email?: string | null } | null;
-    const staff      = shift.staff as unknown as { first_name: string; last_name: string; email: string | null } | null;
-    const resident   = shift.residents as unknown as { first_name: string; last_name: string; address: string | null } | null;
+  if (!shifts?.length) {
+    return NextResponse.json({ ok: true, date: todayStr, clockInSent, clockOutSent });
+  }
+
+  // Batch-load orgs for all unique facility IDs
+  const facilityIds = [...new Set(shifts.map(s => s.facility_id).filter(Boolean))];
+  const { data: orgs } = await db
+    .from("organizations")
+    .select("id, name, slug, primary_color, smtp_host, smtp_port, smtp_user, smtp_pass, smtp_from_name, smtp_from_email")
+    .in("id", facilityIds);
+  const orgMap = Object.fromEntries((orgs ?? []).map(o => [o.id, o]));
+
+  for (const shift of shifts) {
+    const org     = orgMap[shift.facility_id] ?? null;
+    const staff   = shift.staff as unknown as { first_name: string; last_name: string; email: string | null } | null;
+    const resident = shift.residents as unknown as { first_name: string; last_name: string; address: string | null } | null;
 
     if (!staff?.email || !org?.slug) continue;
 
@@ -57,7 +65,7 @@ export async function GET(request: Request) {
     const clientName    = resident ? `${resident.first_name} ${resident.last_name}` : "your client";
     const clockInUrl    = `${appUrl}/portal/${org.slug}/shift/${shift.id}`;
 
-    // ── Clock-in reminder: 15–45 min before start ───────────────────────────
+    // Clock-in reminder: 15–45 min before start
     if (!shift.clock_in_reminder_sent && shift.start_time) {
       const startMinutes = timeToMinutes(shift.start_time);
       const minutesUntilStart = startMinutes - nowMinutes;
@@ -83,13 +91,12 @@ export async function GET(request: Request) {
       }
     }
 
-    // ── Clock-out reminder: within 15 min after end_time ────────────────────
+    // Clock-out reminder: within 30 min after end_time, only if no completed visit
     if (!shift.clock_out_reminder_sent && shift.end_time) {
       const endMinutes = timeToMinutes(shift.end_time);
       const minutesPastEnd = nowMinutes - endMinutes;
 
       if (minutesPastEnd >= 0 && minutesPastEnd <= 30) {
-        // Only send if caregiver hasn't already submitted a report for this shift
         const { data: completedVisit } = await db
           .from("care_visits")
           .select("id")
