@@ -345,6 +345,14 @@ export default async function SettingDashboard({ setting }: { setting: CareSetti
               <p className="text-xs text-slate-500 mt-0.5">Falls, injuries & safety events</p>
               <p className="text-xs mt-1" style={{ color: "#b45309" }}>WAC 388-76-10350 →</p>
             </Link>
+            <Link href="/dashboard/afh/medications/completion"
+              className="rounded-2xl border-2 p-4 shadow-sm hover:shadow-md transition-all"
+              style={{ borderColor: "#b45309", background: "#fffbeb" }}>
+              <span className="text-3xl block mb-2">📊</span>
+              <h3 className="font-bold text-slate-900 text-sm">eMAR Completion</h3>
+              <p className="text-xs text-slate-500 mt-0.5">Weekly med pass compliance</p>
+              <p className="text-xs mt-1" style={{ color: "#b45309" }}>WAC 388-76-10530 →</p>
+            </Link>
           </div>
         )}
 
