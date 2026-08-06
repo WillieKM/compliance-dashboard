@@ -6,13 +6,14 @@ const ALL_DASHBOARDS = [
   { id: "HOME_CARE",       label: "🏥 Home Care",        href: "/dashboard/home-care",       complianceHref: "/dashboard/home-care/compliance",       visitsHref: "/dashboard/home-care/visits",           notesHref: "/dashboard/home-care/notes-review",       scheduleHref: "/dashboard/home-care/schedule" },
   { id: "AFH",             label: "🏠 Adult Family Home", href: "/dashboard/afh",             complianceHref: "/dashboard/afh/compliance",             visitsHref: null,                                    notesHref: null,                                      scheduleHref: null },
   { id: "ASSISTED_LIVING", label: "🏢 Assisted Living",   href: "/dashboard/assisted-living", complianceHref: "/dashboard/assisted-living/compliance", visitsHref: "/dashboard/assisted-living/visits",     notesHref: "/dashboard/assisted-living/notes-review", scheduleHref: null },
-  { id: "MULTI_SERVICE",   label: "🌐 Multi-Service",     href: "/dashboard/multi-service",   complianceHref: "/dashboard/multi-service/compliance",   visitsHref: null,                                    notesHref: null,                                      scheduleHref: null },
+  { id: "MULTI_SERVICE",   label: "🌐 Multi-Service",     href: "/dashboard/multi-service",   complianceHref: "/dashboard/multi-service/compliance",   visitsHref: "/dashboard/multi-service/visits",       notesHref: "/dashboard/multi-service/notes-review",  scheduleHref: "/dashboard/multi-service/schedule" },
 ];
 
 const navItems = [
   { label: "Overview",   href: "/dashboard" },
-  { label: "Caregivers", href: "/staff" },
-  { label: "Shifts",     href: "/shifts" },
+  { label: "Caregivers",   href: "/staff" },
+  { label: "Staff Hours",  href: "/staff/hours" },
+  { label: "Shifts",       href: "/shifts" },
   { label: "Residents",  href: "/residents" },
   { label: "Documents",  href: "/documents" },
   { label: "Alerts",     href: "/alerts" },

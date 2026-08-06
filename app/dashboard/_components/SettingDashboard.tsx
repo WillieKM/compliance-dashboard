@@ -110,6 +110,14 @@ export default async function SettingDashboard({ setting }: { setting: CareSetti
                 className="px-5 py-3 text-sm font-semibold text-slate-500 hover:text-slate-900 border-b-2 border-transparent hover:bg-slate-50 transition-all">
                 📅 Schedule
               </Link>
+              <Link href="/dashboard/home-care/incidents"
+                className="px-5 py-3 text-sm font-semibold text-slate-500 hover:text-slate-900 border-b-2 border-transparent hover:bg-slate-50 transition-all">
+                ⚠️ Incidents
+              </Link>
+              <Link href="/dashboard/home-care/safety-assessments"
+                className="px-5 py-3 text-sm font-semibold text-slate-500 hover:text-slate-900 border-b-2 border-transparent hover:bg-slate-50 transition-all">
+                🏠 Safety
+              </Link>
             </>
           )}
           {(setting.id === "ASSISTED_LIVING" || setting.id === "AFH") && (
@@ -123,6 +131,22 @@ export default async function SettingDashboard({ setting }: { setting: CareSetti
               className="px-5 py-3 text-sm font-semibold text-slate-500 hover:text-slate-900 border-b-2 border-transparent hover:bg-slate-50 transition-all">
               📝 Notes
             </Link>
+          )}
+          {setting.id === "MULTI_SERVICE" && (
+            <>
+              <Link href="/dashboard/multi-service/visits"
+                className="px-5 py-3 text-sm font-semibold text-slate-500 hover:text-slate-900 border-b-2 border-transparent hover:bg-slate-50 transition-all">
+                🕐 Visits
+              </Link>
+              <Link href="/dashboard/multi-service/schedule"
+                className="px-5 py-3 text-sm font-semibold text-slate-500 hover:text-slate-900 border-b-2 border-transparent hover:bg-slate-50 transition-all">
+                📅 Schedule
+              </Link>
+              <Link href="/dashboard/multi-service/notes-review"
+                className="px-5 py-3 text-sm font-semibold text-slate-500 hover:text-slate-900 border-b-2 border-transparent hover:bg-slate-50 transition-all">
+                📝 Notes
+              </Link>
+            </>
           )}
         </div>
       </div>
@@ -228,12 +252,14 @@ export default async function SettingDashboard({ setting }: { setting: CareSetti
 
         {/* Home Care quick-access cards */}
         {setting.id === "HOME_CARE" && (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
             {[
-              { href: "/dashboard/home-care/care-plans",  icon: "📋", label: "Plans of Care",  sub: "Required at start of services", wac: "WAC 246-335-055" },
-              { href: "/dashboard/home-care/schedule",    icon: "📅", label: "Schedule",        sub: "Caregiver shift assignment",     wac: "Visits & shifts" },
-              { href: "/dashboard/home-care/visits",      icon: "🕐", label: "Visit Log",       sub: "Clock-in / clock-out history",   wac: "WAC 246-335-065" },
-              { href: "/dashboard/home-care/notes-review",icon: "📝", label: "Notes Review",    sub: "Caregiver notes & incidents",    wac: "WAC 246-335-065" },
+              { href: "/dashboard/home-care/care-plans",          icon: "📋", label: "Plans of Care",       sub: "Required at start",         wac: "WAC 246-335-055" },
+              { href: "/dashboard/home-care/safety-assessments",  icon: "🏠", label: "Safety Assessments",  sub: "In-home hazard review",     wac: "WAC 246-335-055" },
+              { href: "/dashboard/home-care/schedule",            icon: "📅", label: "Schedule",            sub: "Caregiver shift assignment", wac: "Visits & shifts" },
+              { href: "/dashboard/home-care/visits",              icon: "🕐", label: "Visit Log",           sub: "Clock-in / out history",    wac: "WAC 246-335-065" },
+              { href: "/dashboard/home-care/incidents",           icon: "⚠️", label: "Incident Log",        sub: "Falls, injuries & errors",  wac: "WAC 246-335-065" },
+              { href: "/dashboard/home-care/notes-review",        icon: "📝", label: "Notes Review",        sub: "Caregiver notes & AI scan", wac: "WAC 246-335-065" },
             ].map(card => (
               <Link key={card.href} href={card.href}
                 className="rounded-2xl border-2 p-4 shadow-sm hover:shadow-md transition-all"
@@ -242,6 +268,27 @@ export default async function SettingDashboard({ setting }: { setting: CareSetti
                 <h3 className="font-bold text-slate-900 text-sm">{card.label}</h3>
                 <p className="text-xs text-slate-500 mt-0.5">{card.sub}</p>
                 <p className="text-xs mt-1 font-medium" style={{ color: "#1a3a52" }}>{card.wac} →</p>
+              </Link>
+            ))}
+          </div>
+        )}
+
+        {/* Multi-Service quick-access cards */}
+        {setting.id === "MULTI_SERVICE" && (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            {[
+              { href: "/dashboard/multi-service/visits",       icon: "🕐", label: "Visit Log",       sub: "All service line visits",    wac: "Clock-in / out" },
+              { href: "/dashboard/multi-service/schedule",     icon: "📅", label: "Schedule",         sub: "Caregiver shift assignment", wac: "Shifts" },
+              { href: "/dashboard/multi-service/notes-review", icon: "📝", label: "Notes Review",     sub: "Caregiver notes & AI scan", wac: "All care lines" },
+              { href: "/staff/hours",                          icon: "⏱️", label: "Staff Hours",       sub: "Weekly hours & overtime",   wac: "Workforce" },
+            ].map(card => (
+              <Link key={card.href} href={card.href}
+                className="rounded-2xl border-2 p-4 shadow-sm hover:shadow-md transition-all"
+                style={{ borderColor: "#0f766e", background: "#f0fdf9" }}>
+                <span className="text-3xl block mb-2">{card.icon}</span>
+                <h3 className="font-bold text-slate-900 text-sm">{card.label}</h3>
+                <p className="text-xs text-slate-500 mt-0.5">{card.sub}</p>
+                <p className="text-xs mt-1 font-medium" style={{ color: "#0f766e" }}>{card.wac} →</p>
               </Link>
             ))}
           </div>
