@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentProfile } from "@/lib/auth/getCurrentProfile";
 import { createClient } from "@supabase/supabase-js";
+import { logAudit } from "@/lib/audit/logAudit";
 
 function admin() {
   return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
@@ -31,6 +32,16 @@ export async function POST(req: NextRequest) {
     .eq("id", reportId);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  await logAudit({
+    facilityId: profile.facility_id,
+    userId:     profile.id,
+    userName:   profile.full_name ?? undefined,
+    action:     "deleted",
+    entityType: "note",
+    entityId:   reportId,
+    entityName: "Visit service report deleted",
+  });
 
   // If the linked care_visit was a notes-only entry (midnight clock-in, no clock-out)
   // and has no remaining reports, clean it up too

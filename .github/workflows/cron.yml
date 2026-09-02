@@ -1,0 +1,40 @@
+name: Scheduled Cron Jobs
+
+on:
+  schedule:
+    # Shift reminders — every 15 minutes, 5 AM–11 PM UTC (covers US care hours)
+    - cron: "*/15 5-23 * * *"
+    # Cert expiry check — daily at 15:00 UTC (8:00 AM PT)
+    - cron: "0 15 * * *"
+  workflow_dispatch: {}
+
+jobs:
+  # ─── Shift clock-in / clock-out reminders ─────────────────────────────────
+  shift-reminders:
+    name: Shift Reminders
+    runs-on: ubuntu-latest
+    # Run on the frequent schedule or when triggered manually
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      github.event.schedule == '*/15 5-23 * * *'
+    steps:
+      - name: Trigger shift reminders
+        run: |
+          curl -fsS -X GET \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "${{ secrets.APP_URL }}/api/cron/shift-reminders"
+
+  # ─── Staff certification expiry alerts ────────────────────────────────────
+  cert-expiry-check:
+    name: Cert Expiry Check
+    runs-on: ubuntu-latest
+    # Run once daily at 15:00 UTC (8:00 AM PT), or when triggered manually
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      github.event.schedule == '0 15 * * *'
+    steps:
+      - name: Trigger cert expiry check
+        run: |
+          curl -fsS -X GET \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "${{ secrets.APP_URL }}/api/cron/cert-expiry-check"

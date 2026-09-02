@@ -20,6 +20,7 @@ const navItems = [
   { label: "Messages",   href: "/messages" },
   { label: "Checklist",  href: "/checklist" },
   { label: "Billing",    href: "/billing" },
+  { label: "Audit Trail", href: "/audit" },
 ];
 
 export default async function Sidebar() {

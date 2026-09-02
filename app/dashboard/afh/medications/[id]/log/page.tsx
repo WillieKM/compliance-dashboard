@@ -3,6 +3,7 @@ import { redirect, notFound } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { getCurrentProfile } from "@/lib/auth/getCurrentProfile";
 import { createClient } from "@/lib/supabase/server";
+import { logAudit } from "@/lib/audit/logAudit";
 
 export const dynamic = "force-dynamic";
 const amber = "#b45309";
@@ -36,6 +37,15 @@ export default async function LogAdminPage({ params }: { params: Promise<{ id: s
       given,
       reason_not_given: !given ? String(formData.get("reason_not_given") || "") : null,
       notes: String(formData.get("notes") || "") || null,
+    });
+    await logAudit({
+      facilityId: p.facility_id,
+      userName:   String(formData.get("administered_by")),
+      action:     "logged",
+      entityType: "medication_log",
+      entityId:   id,
+      entityName: `${med.medication_name} — ${given ? "Given" : "Not given"} to ${med.resident_name}`,
+      details:    !given ? { reason: String(formData.get("reason_not_given") || "") } : undefined,
     });
     revalidatePath(`/dashboard/afh/medications/${id}/log`);
   }

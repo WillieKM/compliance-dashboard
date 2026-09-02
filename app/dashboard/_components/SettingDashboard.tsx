@@ -129,9 +129,10 @@ export default async function SettingDashboard({ setting }: { setting: CareSetti
           )}
           {setting.id === "MULTI_SERVICE" && (
             <>
-              <Link href="/dashboard/multi-service/visits"     className="px-5 py-3 text-sm font-semibold text-slate-500 hover:text-slate-900 border-b-2 border-transparent hover:bg-slate-50 transition-all">🕐 Visits</Link>
-              <Link href="/dashboard/multi-service/schedule"   className="px-5 py-3 text-sm font-semibold text-slate-500 hover:text-slate-900 border-b-2 border-transparent hover:bg-slate-50 transition-all">📅 Schedule</Link>
-              <Link href="/dashboard/multi-service/incidents"  className="px-5 py-3 text-sm font-semibold text-slate-500 hover:text-slate-900 border-b-2 border-transparent hover:bg-slate-50 transition-all">⚠️ Incidents</Link>
+              <Link href="/dashboard/multi-service/visits"      className="px-5 py-3 text-sm font-semibold text-slate-500 hover:text-slate-900 border-b-2 border-transparent hover:bg-slate-50 transition-all">🕐 Visits</Link>
+              <Link href="/dashboard/multi-service/schedule"    className="px-5 py-3 text-sm font-semibold text-slate-500 hover:text-slate-900 border-b-2 border-transparent hover:bg-slate-50 transition-all">📅 Schedule</Link>
+              <Link href="/dashboard/multi-service/care-plans"  className="px-5 py-3 text-sm font-semibold text-slate-500 hover:text-slate-900 border-b-2 border-transparent hover:bg-slate-50 transition-all">📋 Care Plans</Link>
+              <Link href="/dashboard/multi-service/incidents"   className="px-5 py-3 text-sm font-semibold text-slate-500 hover:text-slate-900 border-b-2 border-transparent hover:bg-slate-50 transition-all">⚠️ Incidents</Link>
               <Link href="/dashboard/multi-service/notes-review" className="px-5 py-3 text-sm font-semibold text-slate-500 hover:text-slate-900 border-b-2 border-transparent hover:bg-slate-50 transition-all">📝 Notes</Link>
             </>
           )}
@@ -264,10 +265,11 @@ export default async function SettingDashboard({ setting }: { setting: CareSetti
 
         {/* Multi-Service quick-access cards */}
         {setting.id === "MULTI_SERVICE" && (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
             {[
               { href: "/dashboard/multi-service/visits",       icon: "🕐", label: "Visit Log",       sub: "All service line visits",    wac: "Clock-in / out" },
               { href: "/dashboard/multi-service/schedule",     icon: "📅", label: "Schedule",         sub: "Caregiver shift assignment", wac: "Shifts" },
+              { href: "/dashboard/multi-service/care-plans",   icon: "📋", label: "Care Plans",       sub: "60-day review tracking",    wac: "WAC 388-71-0520" },
               { href: "/dashboard/multi-service/incidents",    icon: "⚠️", label: "Incident Log",     sub: "Falls, injuries & errors",  wac: "WAC 388-71-0560" },
               { href: "/dashboard/multi-service/notes-review", icon: "📝", label: "Notes Review",     sub: "Caregiver notes & sign-off",wac: "All care lines" },
               { href: "/staff/hours",                          icon: "⏱️", label: "Staff Hours",       sub: "Weekly hours & overtime",   wac: "Workforce" },

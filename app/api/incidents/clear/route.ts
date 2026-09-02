@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { createClient as createServerClient } from "@/lib/supabase/server";
+import { logAudit } from "@/lib/audit/logAudit";
 
 function admin() {
   return createClient(
@@ -27,5 +28,26 @@ export async function POST(request: Request) {
   }).eq("id", reportId);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // Look up facility_id for the audit log
+  const { data: report } = await admin()
+    .from("visit_service_reports")
+    .select("facility_id, visit_id")
+    .eq("id", reportId)
+    .single();
+
+  if (report?.facility_id) {
+    await logAudit({
+      facilityId: report.facility_id,
+      userId:     user.id,
+      userName:   supervisorName,
+      action:     "cleared",
+      entityType: "incident",
+      entityId:   reportId,
+      entityName: `Incident/fall report cleared by ${supervisorName}`,
+      details:    supervisorNotes ? { notes: supervisorNotes } : undefined,
+    });
+  }
+
   return NextResponse.json({ ok: true });
 }

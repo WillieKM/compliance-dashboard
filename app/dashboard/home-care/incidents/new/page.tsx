@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentProfile } from "@/lib/auth/getCurrentProfile";
 import { createClient } from "@/lib/supabase/server";
+import { logAudit } from "@/lib/audit/logAudit";
 
 export const dynamic = "force-dynamic";
 const navy = "#1a3a52";
@@ -42,6 +43,18 @@ export default async function NewHomeCareIncidentPage() {
       prevention_plan:     String(formData.get("prevention_plan") || "") || null,
       reported_by:         String(formData.get("reported_by") || "") || null,
       notes:               String(formData.get("notes") || "") || null,
+    });
+    await logAudit({
+      facilityId: p.facility_id,
+      userName:   String(formData.get("reported_by") || ""),
+      action:     "created",
+      entityType: "incident",
+      entityName: `${String(formData.get("incident_type") || "Incident")} — ${String(formData.get("resident_name") || "Unknown client")}`,
+      details:    {
+        type:         String(formData.get("incident_type") || ""),
+        doh_required: formData.get("doh_report_required") === "on",
+        injury:       formData.get("injury_sustained") === "on",
+      },
     });
     redirect("/dashboard/home-care/incidents");
   }
