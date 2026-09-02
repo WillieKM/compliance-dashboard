@@ -73,6 +73,7 @@ export default function CaregiverNotesPage() {
       caregiver_notes: notes,
       mood_demeanor: "",
       adl_checklist: [],
+      submitted_at: new Date().toISOString(),
     });
 
     setSavedId(visit.id.slice(0, 8).toUpperCase());

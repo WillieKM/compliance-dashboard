@@ -3,6 +3,9 @@ import { redirect } from "next/navigation";
 import { getCurrentProfile } from "@/lib/auth/getCurrentProfile";
 import { createClient as adminClient } from "@supabase/supabase-js";
 import IncidentClearButton from "./IncidentClearButton";
+import NoteDeleteButton from "./NoteDeleteButton";
+import NoteDateEditButton from "./NoteDateEditButton";
+import NoteSignOffButton from "./NoteSignOffButton";
 
 function admin() {
   return adminClient(
@@ -71,7 +74,6 @@ export default async function NotesReviewPage({ settingSlug, settingLabel, backH
     .flatMap(v => {
       const reports = (v.visit_service_reports as Report[] | null) ?? [];
       return reports
-        .filter(r => r.submitted_at)
         .map(r => ({
           reportId:        r.id,
           visitId:         v.id,
@@ -123,10 +125,14 @@ export default async function NotesReviewPage({ settingSlug, settingLabel, backH
               {n.duration ? ` (${Math.floor(n.duration / 60)}h ${n.duration % 60}m)` : ""}
             </p>
           </div>
-          <Link href={`/dashboard/${settingSlug === "assisted-living" ? "home-care" : settingSlug}/visits/${n.visitId}`}
-            className="text-xs font-semibold text-blue-600 hover:underline shrink-0">
-            Full Report →
-          </Link>
+            <div className="flex items-center gap-1 shrink-0">
+            <NoteDateEditButton visitId={n.visitId} currentDate={n.clockIn} />
+            <NoteDeleteButton reportId={n.reportId} />
+            <Link href={`/dashboard/${settingSlug === "assisted-living" ? "home-care" : settingSlug}/visits/${n.visitId}`}
+              className="text-xs font-semibold text-blue-600 hover:underline">
+              Full Report →
+            </Link>
+          </div>
         </div>
 
         {n.incidentDesc && (
@@ -156,9 +162,16 @@ export default async function NotesReviewPage({ settingSlug, settingLabel, backH
           </div>
         )}
 
-        {/* Clearance section — only shown on incident cards */}
-        {(n.fallFlag || n.incidentFlag) && (
+        {/* Incident clearance or regular sign-off */}
+        {(n.fallFlag || n.incidentFlag) ? (
           <IncidentClearButton
+            reportId={n.reportId}
+            clearedBy={n.clearedBy}
+            clearedAt={n.clearedAt}
+            supervisorNotes={n.supervisorNotes}
+          />
+        ) : (
+          <NoteSignOffButton
             reportId={n.reportId}
             clearedBy={n.clearedBy}
             clearedAt={n.clearedAt}

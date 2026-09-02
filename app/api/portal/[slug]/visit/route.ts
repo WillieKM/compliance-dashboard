@@ -114,6 +114,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
       incident_description: incidentDesc || null,
       adl_checklist: adlChecklist,
       caregiver_notes: caregiverNotes,
+      submitted_at: new Date().toISOString(),
     });
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     // Mark the linked shift as completed
