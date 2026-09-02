@@ -116,6 +116,7 @@ export default async function SettingDashboard({ setting }: { setting: CareSetti
               <Link href="/dashboard/afh/residency-agreements"    className="px-5 py-3 text-sm font-semibold text-slate-500 hover:text-slate-900 border-b-2 border-transparent hover:bg-slate-50 transition-all">📝 Residency</Link>
               <Link href="/dashboard/afh/dwda"                    className="px-5 py-3 text-sm font-semibold text-slate-500 hover:text-slate-900 border-b-2 border-transparent hover:bg-slate-50 transition-all">🕊️ DWDA</Link>
               <Link href="/dashboard/afh/succession-plan"         className="px-5 py-3 text-sm font-semibold text-slate-500 hover:text-slate-900 border-b-2 border-transparent hover:bg-slate-50 transition-all">📄 Succession</Link>
+              <Link href="/dashboard/afh/inspections"            className="px-5 py-3 text-sm font-semibold text-slate-500 hover:text-slate-900 border-b-2 border-transparent hover:bg-slate-50 transition-all">🔍 Inspections</Link>
             </>
           )}
           {setting.id === "ASSISTED_LIVING" && (
@@ -378,6 +379,14 @@ export default async function SettingDashboard({ setting }: { setting: CareSetti
               <span className="text-3xl block mb-2">📄</span>
               <h3 className="font-bold text-slate-900 text-sm">Succession Plan</h3>
               <p className="text-xs text-slate-500 mt-0.5">DSHS inspection requirement</p>
+              <p className="text-xs mt-1" style={{ color: "#b45309" }}>WAC 388-76 →</p>
+            </Link>
+            <Link href="/dashboard/afh/inspections"
+              className="rounded-2xl border-2 p-4 shadow-sm hover:shadow-md transition-all"
+              style={{ borderColor: "#b45309", background: "#fffbeb" }}>
+              <span className="text-3xl block mb-2">🔍</span>
+              <h3 className="font-bold text-slate-900 text-sm">Inspection Log</h3>
+              <p className="text-xs text-slate-500 mt-0.5">DSHS visits, findings & CAPs</p>
               <p className="text-xs mt-1" style={{ color: "#b45309" }}>WAC 388-76 →</p>
             </Link>
           </div>
