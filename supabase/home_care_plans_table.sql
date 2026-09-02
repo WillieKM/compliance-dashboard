@@ -6,6 +6,16 @@
 -- due at start of services (not N days later), and the review cycle is 60
 -- days (not 6 months).
 
+
+
+
+
+
+
+63fa848d8d0cac6ec39fe4ca51636b3f3d139e9de6f89e6c96203a4f04397a5f
+
+
+
 CREATE TABLE IF NOT EXISTS home_care_plans (
   id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT now()

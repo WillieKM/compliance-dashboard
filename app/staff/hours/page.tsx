@@ -91,6 +91,12 @@ export default async function StaffHoursPage({ searchParams }: { searchParams: P
           <h1 className="text-2xl font-bold text-slate-900 mt-1">Staff Hours</h1>
           <p className="text-slate-500 text-sm mt-0.5">Weekly hours summary from completed visits and accepted shifts</p>
         </div>
+        <Link
+          href={`/api/staff/hours/export?week=${weekStartStr}`}
+          className="px-4 py-2 rounded-lg border border-slate-300 text-slate-700 text-sm font-semibold hover:bg-slate-50"
+        >
+          ↓ Download CSV
+        </Link>
       </div>
 
       <div className="bg-white rounded-xl border border-slate-200 p-3 flex items-center justify-between shadow-sm">

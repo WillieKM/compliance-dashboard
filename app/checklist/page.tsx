@@ -32,6 +32,9 @@ export default async function ChecklistPage() {
   });
 
   const today = new Date().toISOString().split("T")[0];
+  const in30Days = new Date(); in30Days.setDate(in30Days.getDate() + 30);
+  const in30Str  = in30Days.toISOString().split("T")[0];
+
   const total = requirements.length;
   const completed = requirements.filter((req: any) =>
     documents?.some(doc => doc.document_type_id === req.document_types?.id &&
@@ -39,15 +42,21 @@ export default async function ChecklistPage() {
   ).length;
   const score = total > 0 ? Math.round((completed / total) * 100) : 0;
 
+  // Documents with expiry dates within the next 30 days (not yet expired)
+  const expiringSoon = (documents ?? []).filter(d =>
+    d.expiration_date && d.expiration_date >= today && d.expiration_date <= in30Str
+  );
+
   return (
     <div>
       <h1 className="text-4xl font-bold mb-8">Compliance Checklist</h1>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
         {[
           { label: "Compliance Score", value: `${score}%`,            cls: "text-blue-700" },
           { label: "Completed",        value: completed,               cls: "text-emerald-600" },
-          { label: "Missing",          value: total - completed,       cls: "text-red-600" },
+          { label: "Expiring Soon",    value: expiringSoon.length,     cls: expiringSoon.length > 0 ? "text-amber-600" : "text-slate-400" },
+          { label: "Missing / Expired",value: total - completed,       cls: "text-red-600" },
         ].map(s => (
           <div key={s.label} className="bg-white rounded-2xl shadow p-6 border">
             <p className="text-gray-500 text-sm">{s.label}</p>
@@ -55,6 +64,25 @@ export default async function ChecklistPage() {
           </div>
         ))}
       </div>
+
+      {expiringSoon.length > 0 && (
+        <div className="rounded-xl border-2 border-amber-200 bg-amber-50 p-4 mb-6">
+          <p className="font-bold text-amber-900 mb-2">⏰ {expiringSoon.length} document{expiringSoon.length > 1 ? "s" : ""} expiring within 30 days</p>
+          <div className="space-y-1">
+            {expiringSoon.map((d, i) => {
+              const req = requirements.find((r: any) => r.document_types?.id === d.document_type_id);
+              const name = (req as any)?.document_types?.name ?? "Document";
+              const daysLeft = Math.ceil((new Date(d.expiration_date!).getTime() - new Date(today).getTime()) / 86400000);
+              return (
+                <p key={i} className="text-sm text-amber-800">
+                  • <strong>{name}</strong> — expires {d.expiration_date} ({daysLeft} day{daysLeft !== 1 ? "s" : ""} left)
+                  <Link href="/documents/new" className="ml-2 text-xs font-semibold text-amber-700 hover:underline">Renew →</Link>
+                </p>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       <div className="bg-white rounded-xl shadow overflow-hidden">
         <table className="w-full text-sm">

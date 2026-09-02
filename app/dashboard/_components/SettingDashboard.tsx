@@ -102,29 +102,24 @@ export default async function SettingDashboard({ setting }: { setting: CareSetti
           </Link>
           {setting.id === "HOME_CARE" && (
             <>
-              <Link href="/dashboard/home-care/visits"
-                className="px-5 py-3 text-sm font-semibold text-slate-500 hover:text-slate-900 border-b-2 border-transparent hover:bg-slate-50 transition-all">
-                🕐 Visits
-              </Link>
-              <Link href="/dashboard/home-care/schedule"
-                className="px-5 py-3 text-sm font-semibold text-slate-500 hover:text-slate-900 border-b-2 border-transparent hover:bg-slate-50 transition-all">
-                📅 Schedule
-              </Link>
-              <Link href="/dashboard/home-care/incidents"
-                className="px-5 py-3 text-sm font-semibold text-slate-500 hover:text-slate-900 border-b-2 border-transparent hover:bg-slate-50 transition-all">
-                ⚠️ Incidents
-              </Link>
-              <Link href="/dashboard/home-care/safety-assessments"
-                className="px-5 py-3 text-sm font-semibold text-slate-500 hover:text-slate-900 border-b-2 border-transparent hover:bg-slate-50 transition-all">
-                🏠 Safety
-              </Link>
+              <Link href="/dashboard/home-care/visits"        className="px-5 py-3 text-sm font-semibold text-slate-500 hover:text-slate-900 border-b-2 border-transparent hover:bg-slate-50 transition-all">🕐 Visits</Link>
+              <Link href="/dashboard/home-care/schedule"      className="px-5 py-3 text-sm font-semibold text-slate-500 hover:text-slate-900 border-b-2 border-transparent hover:bg-slate-50 transition-all">📅 Schedule</Link>
+              <Link href="/dashboard/home-care/medications"   className="px-5 py-3 text-sm font-semibold text-slate-500 hover:text-slate-900 border-b-2 border-transparent hover:bg-slate-50 transition-all">💊 Meds</Link>
+              <Link href="/dashboard/home-care/incidents"     className="px-5 py-3 text-sm font-semibold text-slate-500 hover:text-slate-900 border-b-2 border-transparent hover:bg-slate-50 transition-all">⚠️ Incidents</Link>
+              <Link href="/dashboard/home-care/safety-assessments" className="px-5 py-3 text-sm font-semibold text-slate-500 hover:text-slate-900 border-b-2 border-transparent hover:bg-slate-50 transition-all">🏠 Safety</Link>
             </>
           )}
-          {(setting.id === "ASSISTED_LIVING" || setting.id === "AFH") && (
-            <Link href={`/dashboard/${complianceSlug}/visits`}
-              className="px-5 py-3 text-sm font-semibold text-slate-500 hover:text-slate-900 border-b-2 border-transparent hover:bg-slate-50 transition-all">
-              🕐 Visits
-            </Link>
+          {setting.id === "AFH" && (
+            <>
+              <Link href="/dashboard/afh/visits"              className="px-5 py-3 text-sm font-semibold text-slate-500 hover:text-slate-900 border-b-2 border-transparent hover:bg-slate-50 transition-all">🕐 Visits</Link>
+              <Link href="/dashboard/afh/safety-assessments" className="px-5 py-3 text-sm font-semibold text-slate-500 hover:text-slate-900 border-b-2 border-transparent hover:bg-slate-50 transition-all">🔬 Safety</Link>
+            </>
+          )}
+          {setting.id === "ASSISTED_LIVING" && (
+            <>
+              <Link href="/dashboard/assisted-living/visits"       className="px-5 py-3 text-sm font-semibold text-slate-500 hover:text-slate-900 border-b-2 border-transparent hover:bg-slate-50 transition-all">🕐 Visits</Link>
+              <Link href="/dashboard/assisted-living/medications"  className="px-5 py-3 text-sm font-semibold text-slate-500 hover:text-slate-900 border-b-2 border-transparent hover:bg-slate-50 transition-all">💊 Meds</Link>
+            </>
           )}
           {(setting.id === "HOME_CARE" || setting.id === "ASSISTED_LIVING" || setting.id === "AFH") && (
             <Link href={`/dashboard/${complianceSlug}/notes-review`}
@@ -134,18 +129,10 @@ export default async function SettingDashboard({ setting }: { setting: CareSetti
           )}
           {setting.id === "MULTI_SERVICE" && (
             <>
-              <Link href="/dashboard/multi-service/visits"
-                className="px-5 py-3 text-sm font-semibold text-slate-500 hover:text-slate-900 border-b-2 border-transparent hover:bg-slate-50 transition-all">
-                🕐 Visits
-              </Link>
-              <Link href="/dashboard/multi-service/schedule"
-                className="px-5 py-3 text-sm font-semibold text-slate-500 hover:text-slate-900 border-b-2 border-transparent hover:bg-slate-50 transition-all">
-                📅 Schedule
-              </Link>
-              <Link href="/dashboard/multi-service/notes-review"
-                className="px-5 py-3 text-sm font-semibold text-slate-500 hover:text-slate-900 border-b-2 border-transparent hover:bg-slate-50 transition-all">
-                📝 Notes
-              </Link>
+              <Link href="/dashboard/multi-service/visits"     className="px-5 py-3 text-sm font-semibold text-slate-500 hover:text-slate-900 border-b-2 border-transparent hover:bg-slate-50 transition-all">🕐 Visits</Link>
+              <Link href="/dashboard/multi-service/schedule"   className="px-5 py-3 text-sm font-semibold text-slate-500 hover:text-slate-900 border-b-2 border-transparent hover:bg-slate-50 transition-all">📅 Schedule</Link>
+              <Link href="/dashboard/multi-service/incidents"  className="px-5 py-3 text-sm font-semibold text-slate-500 hover:text-slate-900 border-b-2 border-transparent hover:bg-slate-50 transition-all">⚠️ Incidents</Link>
+              <Link href="/dashboard/multi-service/notes-review" className="px-5 py-3 text-sm font-semibold text-slate-500 hover:text-slate-900 border-b-2 border-transparent hover:bg-slate-50 transition-all">📝 Notes</Link>
             </>
           )}
         </div>
@@ -231,12 +218,13 @@ export default async function SettingDashboard({ setting }: { setting: CareSetti
 
         {/* Assisted Living quick-access cards */}
         {setting.id === "ASSISTED_LIVING" && (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
             {[
-              { href: "/dashboard/assisted-living/isp",            icon: "📋", label: "ISP Tracking",        sub: "Individual Service Plans", wac: "WAC 388-78A-2170" },
-              { href: "/dashboard/assisted-living/assessments",    icon: "🔍", label: "Resident Assessments", sub: "Required within 14 days",   wac: "WAC 388-78A-2160" },
-              { href: "/dashboard/assisted-living/rn-delegation",  icon: "👩‍⚕️", label: "RN Delegation",      sub: "Medication management",      wac: "WAC 388-78A-2240" },
-              { href: "/dashboard/assisted-living/falls",          icon: "🛡️", label: "Falls Log",            sub: "Incident & prevention",      wac: "WAC 388-78A-2600" },
+              { href: "/dashboard/assisted-living/isp",           icon: "📋", label: "ISP Tracking",        sub: "Individual Service Plans", wac: "WAC 388-78A-2170" },
+              { href: "/dashboard/assisted-living/assessments",   icon: "🔍", label: "Resident Assessments",sub: "Required within 14 days",  wac: "WAC 388-78A-2160" },
+              { href: "/dashboard/assisted-living/rn-delegation", icon: "👩‍⚕️", label: "RN Delegation",     sub: "Medication management",     wac: "WAC 388-78A-2240" },
+              { href: "/dashboard/assisted-living/falls",         icon: "🛡️", label: "Falls Log",           sub: "Incident & prevention",    wac: "WAC 388-78A-2600" },
+              { href: "/dashboard/assisted-living/medications",   icon: "💊", label: "Medications / eMAR",  sub: "Med pass & completion",    wac: "WAC 388-78A-2570" },
             ].map(card => (
               <Link key={card.href} href={card.href}
                 className="rounded-2xl border-2 p-4 shadow-sm hover:shadow-md transition-all"
@@ -252,14 +240,15 @@ export default async function SettingDashboard({ setting }: { setting: CareSetti
 
         {/* Home Care quick-access cards */}
         {setting.id === "HOME_CARE" && (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4">
             {[
-              { href: "/dashboard/home-care/care-plans",          icon: "📋", label: "Plans of Care",       sub: "Required at start",         wac: "WAC 246-335-055" },
-              { href: "/dashboard/home-care/safety-assessments",  icon: "🏠", label: "Safety Assessments",  sub: "In-home hazard review",     wac: "WAC 246-335-055" },
-              { href: "/dashboard/home-care/schedule",            icon: "📅", label: "Schedule",            sub: "Caregiver shift assignment", wac: "Visits & shifts" },
-              { href: "/dashboard/home-care/visits",              icon: "🕐", label: "Visit Log",           sub: "Clock-in / out history",    wac: "WAC 246-335-065" },
-              { href: "/dashboard/home-care/incidents",           icon: "⚠️", label: "Incident Log",        sub: "Falls, injuries & errors",  wac: "WAC 246-335-065" },
-              { href: "/dashboard/home-care/notes-review",        icon: "📝", label: "Notes Review",        sub: "Caregiver notes & AI scan", wac: "WAC 246-335-065" },
+              { href: "/dashboard/home-care/care-plans",         icon: "📋", label: "Plans of Care",      sub: "Required at start",         wac: "WAC 246-335-055" },
+              { href: "/dashboard/home-care/safety-assessments", icon: "🏠", label: "Safety Assessments", sub: "In-home hazard review",     wac: "WAC 246-335-055" },
+              { href: "/dashboard/home-care/medications",        icon: "💊", label: "Medications / eMAR", sub: "Med tracking & completion", wac: "WAC 246-335-065" },
+              { href: "/dashboard/home-care/schedule",           icon: "📅", label: "Schedule",           sub: "Caregiver shift assignment",wac: "Visits & shifts" },
+              { href: "/dashboard/home-care/visits",             icon: "🕐", label: "Visit Log",          sub: "Clock-in / out history",   wac: "WAC 246-335-065" },
+              { href: "/dashboard/home-care/incidents",          icon: "⚠️", label: "Incident Log",       sub: "Falls, injuries & errors", wac: "WAC 246-335-065" },
+              { href: "/dashboard/home-care/notes-review",       icon: "📝", label: "Notes Review",       sub: "Caregiver notes & sign-off",wac: "WAC 246-335-065" },
             ].map(card => (
               <Link key={card.href} href={card.href}
                 className="rounded-2xl border-2 p-4 shadow-sm hover:shadow-md transition-all"
@@ -275,11 +264,12 @@ export default async function SettingDashboard({ setting }: { setting: CareSetti
 
         {/* Multi-Service quick-access cards */}
         {setting.id === "MULTI_SERVICE" && (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
             {[
               { href: "/dashboard/multi-service/visits",       icon: "🕐", label: "Visit Log",       sub: "All service line visits",    wac: "Clock-in / out" },
               { href: "/dashboard/multi-service/schedule",     icon: "📅", label: "Schedule",         sub: "Caregiver shift assignment", wac: "Shifts" },
-              { href: "/dashboard/multi-service/notes-review", icon: "📝", label: "Notes Review",     sub: "Caregiver notes & AI scan", wac: "All care lines" },
+              { href: "/dashboard/multi-service/incidents",    icon: "⚠️", label: "Incident Log",     sub: "Falls, injuries & errors",  wac: "WAC 388-71-0560" },
+              { href: "/dashboard/multi-service/notes-review", icon: "📝", label: "Notes Review",     sub: "Caregiver notes & sign-off",wac: "All care lines" },
               { href: "/staff/hours",                          icon: "⏱️", label: "Staff Hours",       sub: "Weekly hours & overtime",   wac: "Workforce" },
             ].map(card => (
               <Link key={card.href} href={card.href}
@@ -352,6 +342,14 @@ export default async function SettingDashboard({ setting }: { setting: CareSetti
               <h3 className="font-bold text-slate-900 text-sm">eMAR Completion</h3>
               <p className="text-xs text-slate-500 mt-0.5">Weekly med pass compliance</p>
               <p className="text-xs mt-1" style={{ color: "#b45309" }}>WAC 388-76-10530 →</p>
+            </Link>
+            <Link href="/dashboard/afh/safety-assessments"
+              className="rounded-2xl border-2 p-4 shadow-sm hover:shadow-md transition-all"
+              style={{ borderColor: "#b45309", background: "#fffbeb" }}>
+              <span className="text-3xl block mb-2">🔬</span>
+              <h3 className="font-bold text-slate-900 text-sm">Safety Assessments</h3>
+              <p className="text-xs text-slate-500 mt-0.5">Home safety & hazard review</p>
+              <p className="text-xs mt-1" style={{ color: "#b45309" }}>WAC 388-76-10820 →</p>
             </Link>
           </div>
         )}

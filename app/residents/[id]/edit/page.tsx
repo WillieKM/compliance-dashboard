@@ -81,6 +81,9 @@ export default async function EditResidentPage({
       geocoded_at: geocodedAt,
       photo_url:   photoUrl,
       family_contact_email: String(formData.get("family_contact_email") || "") || null,
+      admission_date:       String(formData.get("admission_date") || "") || null,
+      discharge_date:       String(formData.get("discharge_date") || "") || null,
+      discharge_reason:     String(formData.get("discharge_reason") || "") || null,
     }).eq("id", id).eq("facility_id", p.facility_id);
 
     if (error) redirect(`/residents/${id}/edit?error=${encodeURIComponent(error.message)}`);
@@ -168,6 +171,24 @@ export default async function EditResidentPage({
           <input type="email" name="family_contact_email" defaultValue={resident.family_contact_email ?? ""} placeholder="e.g. family@example.com" className={inp} />
           <p className="mt-1 text-xs text-slate-400">Used to notify family when the office sends them a message via the Family Portal.</p>
         </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block mb-1.5 font-semibold text-slate-700">Admission Date</label>
+            <input type="date" name="admission_date" defaultValue={resident.admission_date ?? ""} className={inp} />
+          </div>
+          <div>
+            <label className="block mb-1.5 font-semibold text-slate-700">Discharge Date</label>
+            <input type="date" name="discharge_date" defaultValue={resident.discharge_date ?? ""} className={inp} />
+          </div>
+        </div>
+
+        {(resident.status === "Discharged" || resident.discharge_date) && (
+          <div>
+            <label className="block mb-1.5 font-semibold text-slate-700">Discharge Reason</label>
+            <input type="text" name="discharge_reason" defaultValue={resident.discharge_reason ?? ""} placeholder="e.g. Moved to nursing facility, Hospitalized, Deceased" className={inp} />
+          </div>
+        )}
 
         <details className="rounded-lg border border-slate-200 p-3">
           <summary className="text-sm font-medium text-slate-600 cursor-pointer">Advanced: GPS coordinates override</summary>
