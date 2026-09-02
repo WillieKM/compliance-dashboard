@@ -81,9 +81,11 @@ export default async function EditResidentPage({
       geocoded_at: geocodedAt,
       photo_url:   photoUrl,
       family_contact_email: String(formData.get("family_contact_email") || "") || null,
-      admission_date:       String(formData.get("admission_date") || "") || null,
-      discharge_date:       String(formData.get("discharge_date") || "") || null,
-      discharge_reason:     String(formData.get("discharge_reason") || "") || null,
+      admission_date:             String(formData.get("admission_date") || "") || null,
+      discharge_date:             String(formData.get("discharge_date") || "") || null,
+      discharge_reason:           String(formData.get("discharge_reason") || "") || null,
+      dwda_preference:            String(formData.get("dwda_preference") || "not_specified"),
+      afh_legal_notice_provided:  formData.get("afh_legal_notice_provided") === "on",
     }).eq("id", id).eq("facility_id", p.facility_id);
 
     if (error) redirect(`/residents/${id}/edit?error=${encodeURIComponent(error.message)}`);
@@ -184,11 +186,27 @@ export default async function EditResidentPage({
         </div>
 
         {(resident.status === "Discharged" || resident.discharge_date) && (
-          <div>
-            <label className="block mb-1.5 font-semibold text-slate-700">Discharge Reason</label>
-            <input type="text" name="discharge_reason" defaultValue={resident.discharge_reason ?? ""} placeholder="e.g. Moved to nursing facility, Hospitalized, Deceased" className={inp} />
+          <div className="space-y-3">
+            <div>
+              <label className="block mb-1.5 font-semibold text-slate-700">Discharge Reason</label>
+              <input type="text" name="discharge_reason" defaultValue={resident.discharge_reason ?? ""} placeholder="e.g. Moved to nursing facility, Hospitalized, Deceased" className={inp} />
+            </div>
+            <label className="flex items-center gap-3 cursor-pointer p-3 rounded-xl border border-amber-200 bg-amber-50">
+              <input type="checkbox" name="afh_legal_notice_provided" value="on" defaultChecked={!!resident.afh_legal_notice_provided} className="w-5 h-5 accent-amber-600" />
+              <span className="text-sm font-medium text-amber-900">Written notice of right to legal assistance provided <span className="font-normal text-amber-700">(AFH — required for Medicaid residents on transfer/discharge)</span></span>
+            </label>
           </div>
         )}
+
+        <div className="border-t pt-4">
+          <label className="block mb-1.5 font-semibold text-slate-700">DWDA Preference <span className="text-xs font-normal text-slate-400">(AFH — Death with Dignity Act)</span></label>
+          <select name="dwda_preference" defaultValue={resident.dwda_preference ?? "not_specified"} className={inp}>
+            <option value="not_specified">Not Documented</option>
+            <option value="has_directive">Has Advance Directive</option>
+            <option value="no_directive">No Directive</option>
+          </select>
+          <p className="mt-1 text-xs text-slate-400">AFH providers must document resident DWDA preferences per HCLA bulletin #2025-051.</p>
+        </div>
 
         <details className="rounded-lg border border-slate-200 p-3">
           <summary className="text-sm font-medium text-slate-600 cursor-pointer">Advanced: GPS coordinates override</summary>

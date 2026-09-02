@@ -111,8 +111,11 @@ export default async function SettingDashboard({ setting }: { setting: CareSetti
           )}
           {setting.id === "AFH" && (
             <>
-              <Link href="/dashboard/afh/visits"              className="px-5 py-3 text-sm font-semibold text-slate-500 hover:text-slate-900 border-b-2 border-transparent hover:bg-slate-50 transition-all">🕐 Visits</Link>
-              <Link href="/dashboard/afh/safety-assessments" className="px-5 py-3 text-sm font-semibold text-slate-500 hover:text-slate-900 border-b-2 border-transparent hover:bg-slate-50 transition-all">🔬 Safety</Link>
+              <Link href="/dashboard/afh/visits"                  className="px-5 py-3 text-sm font-semibold text-slate-500 hover:text-slate-900 border-b-2 border-transparent hover:bg-slate-50 transition-all">🕐 Visits</Link>
+              <Link href="/dashboard/afh/safety-assessments"      className="px-5 py-3 text-sm font-semibold text-slate-500 hover:text-slate-900 border-b-2 border-transparent hover:bg-slate-50 transition-all">🔬 Safety</Link>
+              <Link href="/dashboard/afh/residency-agreements"    className="px-5 py-3 text-sm font-semibold text-slate-500 hover:text-slate-900 border-b-2 border-transparent hover:bg-slate-50 transition-all">📝 Residency</Link>
+              <Link href="/dashboard/afh/dwda"                    className="px-5 py-3 text-sm font-semibold text-slate-500 hover:text-slate-900 border-b-2 border-transparent hover:bg-slate-50 transition-all">🕊️ DWDA</Link>
+              <Link href="/dashboard/afh/succession-plan"         className="px-5 py-3 text-sm font-semibold text-slate-500 hover:text-slate-900 border-b-2 border-transparent hover:bg-slate-50 transition-all">📄 Succession</Link>
             </>
           )}
           {setting.id === "ASSISTED_LIVING" && (
@@ -288,7 +291,7 @@ export default async function SettingDashboard({ setting }: { setting: CareSetti
 
         {/* AFH quick-access cards */}
         {setting.id === "AFH" && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
             <Link href="/dashboard/afh/medications/today"
               className="rounded-2xl border-2 p-4 shadow-sm hover:shadow-md transition-all"
               style={{ borderColor: "#b45309", background: "#fef3c7" }}>
@@ -352,6 +355,30 @@ export default async function SettingDashboard({ setting }: { setting: CareSetti
               <h3 className="font-bold text-slate-900 text-sm">Safety Assessments</h3>
               <p className="text-xs text-slate-500 mt-0.5">Home safety & hazard review</p>
               <p className="text-xs mt-1" style={{ color: "#b45309" }}>WAC 388-76-10820 →</p>
+            </Link>
+            <Link href="/dashboard/afh/residency-agreements"
+              className="rounded-2xl border-2 p-4 shadow-sm hover:shadow-md transition-all"
+              style={{ borderColor: "#b45309", background: "#fffbeb" }}>
+              <span className="text-3xl block mb-2">📝</span>
+              <h3 className="font-bold text-slate-900 text-sm">Residency Agreements</h3>
+              <p className="text-xs text-slate-500 mt-0.5">Medicaid resident agreements</p>
+              <p className="text-xs mt-1" style={{ color: "#b45309" }}>WAC 388-76 HCBS →</p>
+            </Link>
+            <Link href="/dashboard/afh/dwda"
+              className="rounded-2xl border-2 p-4 shadow-sm hover:shadow-md transition-all"
+              style={{ borderColor: "#b45309", background: "#fffbeb" }}>
+              <span className="text-3xl block mb-2">🕊️</span>
+              <h3 className="font-bold text-slate-900 text-sm">DWDA Policy</h3>
+              <p className="text-xs text-slate-500 mt-0.5">Death with Dignity Act</p>
+              <p className="text-xs mt-1" style={{ color: "#b45309" }}>HCLA #2025-051 →</p>
+            </Link>
+            <Link href="/dashboard/afh/succession-plan"
+              className="rounded-2xl border-2 p-4 shadow-sm hover:shadow-md transition-all"
+              style={{ borderColor: "#b45309", background: "#fffbeb" }}>
+              <span className="text-3xl block mb-2">📄</span>
+              <h3 className="font-bold text-slate-900 text-sm">Succession Plan</h3>
+              <p className="text-xs text-slate-500 mt-0.5">DSHS inspection requirement</p>
+              <p className="text-xs mt-1" style={{ color: "#b45309" }}>WAC 388-76 →</p>
             </Link>
           </div>
         )}

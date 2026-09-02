@@ -45,9 +45,10 @@ export default async function NewAfhSafetyAssessmentPage({ searchParams }: { sea
       medication_notes:     String(formData.get("medication_notes") || "") || null,
       emergency_plan:       String(formData.get("emergency_plan") || "") || null,
       emergency_contacts:   String(formData.get("emergency_contacts") || "") || null,
-      smoke_detector:       formData.get("smoke_detector") === "on",
-      co_detector:          formData.get("co_detector") === "on",
-      clear_egress:         formData.get("clear_egress") === "on",
+      smoke_detector:              formData.get("smoke_detector") === "on",
+      co_detector:                 formData.get("co_detector") === "on",
+      clear_egress:                formData.get("clear_egress") === "on",
+      emergency_window_clearance:  formData.get("emergency_window_clearance") === "on",
       action_items:         String(formData.get("action_items") || "") || null,
       next_assessment_date: nextDate,
       notes:                String(formData.get("notes") || "") || null,
@@ -117,6 +118,7 @@ export default async function NewAfhSafetyAssessmentPage({ searchParams }: { sea
               <label className={chk}><input type="checkbox" name="smoke_detector" className="w-5 h-5 accent-amber-600" /><span className="text-sm font-medium text-slate-700">Working smoke detector present</span></label>
               <label className={chk}><input type="checkbox" name="co_detector" className="w-5 h-5 accent-amber-600" /><span className="text-sm font-medium text-slate-700">Working CO detector present</span></label>
               <label className={chk}><input type="checkbox" name="clear_egress" className="w-5 h-5 accent-amber-600" /><span className="text-sm font-medium text-slate-700">Clear egress / exit routes</span></label>
+              <label className={chk}><input type="checkbox" name="emergency_window_clearance" className="w-5 h-5 accent-amber-600" /><span className="text-sm font-medium text-slate-700">36-inch clearance in front of at least one resident bedroom window <span className="text-xs text-slate-400">(WAC 388-76 rulemaking — new licenses)</span></span></label>
             </div>
           </div>
         </div>
