@@ -120,6 +120,7 @@ export default async function SettingDashboard({ setting }: { setting: CareSetti
           </Link>
           {setting.id === "HOME_CARE" && (
             <>
+              <Link href="/dashboard/home-care/clients"       className="px-5 py-3 text-sm font-semibold text-slate-500 hover:text-slate-900 border-b-2 border-transparent hover:bg-slate-50 transition-all">👥 Clients</Link>
               <Link href="/dashboard/home-care/visits"        className="px-5 py-3 text-sm font-semibold text-slate-500 hover:text-slate-900 border-b-2 border-transparent hover:bg-slate-50 transition-all">🕐 Visits</Link>
               <Link href="/dashboard/home-care/schedule"      className="px-5 py-3 text-sm font-semibold text-slate-500 hover:text-slate-900 border-b-2 border-transparent hover:bg-slate-50 transition-all">📅 Schedule</Link>
               <Link href="/dashboard/home-care/medications"   className="px-5 py-3 text-sm font-semibold text-slate-500 hover:text-slate-900 border-b-2 border-transparent hover:bg-slate-50 transition-all">💊 Meds</Link>
@@ -305,8 +306,9 @@ export default async function SettingDashboard({ setting }: { setting: CareSetti
 
         {/* Home Care quick-access cards */}
         {setting.id === "HOME_CARE" && (
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-4">
             {[
+              { href: "/dashboard/home-care/clients",            icon: "👥", label: "Client Records",     sub: "Date-by-date history",      wac: "All clients" },
               { href: "/dashboard/home-care/care-plans",         icon: "📋", label: "Plans of Care",      sub: "Required at start",         wac: "WAC 246-335-055" },
               { href: "/dashboard/home-care/safety-assessments", icon: "🏠", label: "Safety Assessments", sub: "In-home hazard review",     wac: "WAC 246-335-055" },
               { href: "/dashboard/home-care/medications",        icon: "💊", label: "Medications / eMAR", sub: "Med tracking & completion", wac: "WAC 246-335-065" },
