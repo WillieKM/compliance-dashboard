@@ -126,6 +126,7 @@ export default async function SettingDashboard({ setting }: { setting: CareSetti
               <Link href="/dashboard/home-care/medications"   className="px-5 py-3 text-sm font-semibold text-slate-500 hover:text-slate-900 border-b-2 border-transparent hover:bg-slate-50 transition-all">💊 Meds</Link>
               <Link href="/dashboard/home-care/incidents"     className="px-5 py-3 text-sm font-semibold text-slate-500 hover:text-slate-900 border-b-2 border-transparent hover:bg-slate-50 transition-all">⚠️ Incidents</Link>
               <Link href="/dashboard/home-care/safety-assessments" className="px-5 py-3 text-sm font-semibold text-slate-500 hover:text-slate-900 border-b-2 border-transparent hover:bg-slate-50 transition-all">🏠 Safety</Link>
+              <Link href="/dashboard/home-care/doh-reports"        className="px-5 py-3 text-sm font-semibold text-slate-500 hover:text-slate-900 border-b-2 border-transparent hover:bg-slate-50 transition-all">🚨 DOH Reports</Link>
             </>
           )}
           {setting.id === "AFH" && (
@@ -136,12 +137,14 @@ export default async function SettingDashboard({ setting }: { setting: CareSetti
               <Link href="/dashboard/afh/dwda"                    className="px-5 py-3 text-sm font-semibold text-slate-500 hover:text-slate-900 border-b-2 border-transparent hover:bg-slate-50 transition-all">🕊️ DWDA</Link>
               <Link href="/dashboard/afh/succession-plan"         className="px-5 py-3 text-sm font-semibold text-slate-500 hover:text-slate-900 border-b-2 border-transparent hover:bg-slate-50 transition-all">📄 Succession</Link>
               <Link href="/dashboard/afh/inspections"            className="px-5 py-3 text-sm font-semibold text-slate-500 hover:text-slate-900 border-b-2 border-transparent hover:bg-slate-50 transition-all">🔍 Inspections</Link>
+              <Link href="/dashboard/afh/doh-reports"            className="px-5 py-3 text-sm font-semibold text-slate-500 hover:text-slate-900 border-b-2 border-transparent hover:bg-slate-50 transition-all">🚨 DOH Reports</Link>
             </>
           )}
           {setting.id === "ASSISTED_LIVING" && (
             <>
               <Link href="/dashboard/assisted-living/visits"       className="px-5 py-3 text-sm font-semibold text-slate-500 hover:text-slate-900 border-b-2 border-transparent hover:bg-slate-50 transition-all">🕐 Visits</Link>
               <Link href="/dashboard/assisted-living/medications"  className="px-5 py-3 text-sm font-semibold text-slate-500 hover:text-slate-900 border-b-2 border-transparent hover:bg-slate-50 transition-all">💊 Meds</Link>
+              <Link href="/dashboard/assisted-living/doh-reports"  className="px-5 py-3 text-sm font-semibold text-slate-500 hover:text-slate-900 border-b-2 border-transparent hover:bg-slate-50 transition-all">🚨 DOH Reports</Link>
             </>
           )}
           {(setting.id === "HOME_CARE" || setting.id === "ASSISTED_LIVING" || setting.id === "AFH") && (
