@@ -89,11 +89,12 @@ export default async function HomeCareIncidentsPage() {
                 <th className="p-3 text-left font-semibold text-slate-600">Injury</th>
                 <th className="p-3 text-left font-semibold text-slate-600">DOH</th>
                 <th className="p-3 text-left font-semibold text-slate-600">Reported By</th>
+                <th className="p-3"></th>
               </tr>
             </thead>
             <tbody>
               {all.map((i, idx) => (
-                <tr key={i.id} className={`border-b hover:bg-slate-50 ${idx % 2 === 0 ? "" : "bg-slate-50/50"}`}>
+                <tr key={i.id} className={`border-b hover:bg-blue-50 transition-colors ${idx % 2 === 0 ? "" : "bg-slate-50/50"}`}>
                   <td className="p-3 text-slate-600">{formatDate(i.incident_date)}</td>
                   <td className="p-3 font-semibold text-slate-900">{i.resident_name || "—"}</td>
                   <td className="p-3">
@@ -112,6 +113,13 @@ export default async function HomeCareIncidentsPage() {
                       : <span className="text-xs text-slate-400">—</span>}
                   </td>
                   <td className="p-3 text-slate-500">{i.reported_by || "—"}</td>
+                  <td className="p-3">
+                    <Link href={`/dashboard/home-care/incidents/${i.id}`}
+                      className="text-xs font-semibold hover:underline whitespace-nowrap"
+                      style={{ color: navy }}>
+                      View →
+                    </Link>
+                  </td>
                 </tr>
               ))}
             </tbody>

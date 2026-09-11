@@ -30,7 +30,9 @@ export default async function SettingDashboard({ setting }: { setting: CareSetti
   const supabase   = await createClient();
   const appUrl     = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
-  const [metrics, alerts, staff, residents, activeVisitsRes, docCompletion] = await Promise.all([
+  const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString();
+
+  const [metrics, alerts, staff, residents, activeVisitsRes, docCompletion, notesWeekRes, formalIncidentRes] = await Promise.all([
     getDashboardMetrics(facilityId),
     getAlerts(facilityId),
     getStaffCompliance(facilityId),
@@ -41,6 +43,22 @@ export default async function SettingDashboard({ setting }: { setting: CareSetti
       .eq("status", "active")
       .order("clock_in_time", { ascending: true }),
     getResidentDocumentCompletion(facilityId, setting.id),
+    // HC: notes submitted this week
+    setting.id === "HOME_CARE"
+      ? supabase.from("visit_service_reports")
+          .select("id, cleared, incident_occurred, fall_occurred, submitted_at")
+          .eq("facility_id", facilityId)
+          .gte("submitted_at", sevenDaysAgo)
+          .limit(500)
+      : Promise.resolve({ data: null as null }),
+    // HC: formal incident log
+    setting.id === "HOME_CARE"
+      ? supabase.from("home_care_incidents")
+          .select("id, incident_date, incident_type, resident_name, doh_report_required, injury_sustained")
+          .eq("facility_id", facilityId)
+          .order("incident_date", { ascending: false })
+          .limit(50)
+      : Promise.resolve({ data: null as null }),
   ]);
 
   const activeVisits = activeVisitsRes.data ?? [];
@@ -242,6 +260,48 @@ export default async function SettingDashboard({ setting }: { setting: CareSetti
             ))}
           </div>
         )}
+
+        {/* Home Care: live notes & incidents summary */}
+        {setting.id === "HOME_CARE" && (() => {
+          const notesWeek   = (notesWeekRes as { data: { cleared: boolean; incident_occurred: boolean; fall_occurred: boolean }[] | null }).data ?? [];
+          const formalIncs  = (formalIncidentRes as { data: { doh_report_required: boolean; injury_sustained: boolean }[] | null }).data ?? [];
+          const unsigned    = notesWeek.filter(n => !n.cleared).length;
+          const flagged     = notesWeek.filter(n => n.incident_occurred || n.fall_occurred).length;
+          const dohRequired = formalIncs.filter(i => i.doh_report_required).length;
+          const hasUrgent   = unsigned > 0 || flagged > 0 || dohRequired > 0;
+
+          return (
+            <div className={`rounded-xl border-2 p-4 ${hasUrgent ? "border-amber-200 bg-amber-50" : "border-emerald-200 bg-emerald-50"}`}>
+              <div className="flex items-center justify-between flex-wrap gap-3 mb-3">
+                <h3 className={`font-bold text-base ${hasUrgent ? "text-amber-900" : "text-emerald-900"}`}>
+                  {hasUrgent ? "⚠ Notes & Incidents — Action Needed" : "✓ Notes & Incidents — All Clear"}
+                </h3>
+                <div className="flex gap-2 text-xs">
+                  <Link href="/dashboard/home-care/notes-review" className="px-3 py-1.5 rounded-lg bg-white border border-slate-300 font-semibold text-slate-700 hover:bg-slate-50">
+                    Notes Review →
+                  </Link>
+                  <Link href="/dashboard/home-care/incidents" className="px-3 py-1.5 rounded-lg bg-white border border-slate-300 font-semibold text-slate-700 hover:bg-slate-50">
+                    Incident Log →
+                  </Link>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {[
+                  { label: "Notes This Week",      value: notesWeek.length, href: "/dashboard/home-care/notes-review",  cls: "bg-white border-slate-200 text-slate-700" },
+                  { label: "Awaiting Sign-off",     value: unsigned,          href: "/dashboard/home-care/notes-review",  cls: unsigned  > 0 ? "bg-amber-100 border-amber-300 text-amber-900" : "bg-white border-slate-200 text-slate-500" },
+                  { label: "Incident Flags in Notes",value: flagged,          href: "/dashboard/home-care/notes-review",  cls: flagged   > 0 ? "bg-red-50 border-red-200 text-red-800"   : "bg-white border-slate-200 text-slate-500" },
+                  { label: "DOH Reports Required",  value: dohRequired,       href: "/dashboard/home-care/incidents",      cls: dohRequired > 0 ? "bg-red-50 border-red-200 text-red-800"   : "bg-white border-slate-200 text-slate-500" },
+                ].map(s => (
+                  <Link key={s.label} href={s.href}
+                    className={`rounded-xl border-2 p-3 text-center hover:opacity-80 transition-opacity ${s.cls}`}>
+                    <p className="text-2xl font-bold">{s.value}</p>
+                    <p className="text-xs font-semibold mt-0.5 leading-tight">{s.label}</p>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Home Care quick-access cards */}
         {setting.id === "HOME_CARE" && (
