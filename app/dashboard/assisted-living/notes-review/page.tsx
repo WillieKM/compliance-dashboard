@@ -3,7 +3,7 @@ export const dynamic = "force-dynamic";
 export default function ALNotesPage({
   searchParams,
 }: {
-  searchParams?: { client?: string; days?: string };
+  searchParams?: { client?: string; days?: string; caregiver?: string };
 }) {
   return (
     <NotesReviewPage
@@ -12,6 +12,7 @@ export default function ALNotesPage({
       backHref="/dashboard/assisted-living"
       headerBg="linear-gradient(135deg, #4c1d95, #6d28d9)"
       clientFilter={searchParams?.client}
+      caregiverFilter={searchParams?.caregiver}
       daysFilter={searchParams?.days}
     />
   );

@@ -3,7 +3,7 @@ export const dynamic = "force-dynamic";
 export default function AFHNotesPage({
   searchParams,
 }: {
-  searchParams?: { client?: string; days?: string };
+  searchParams?: { client?: string; days?: string; caregiver?: string };
 }) {
   return (
     <NotesReviewPage
@@ -12,6 +12,7 @@ export default function AFHNotesPage({
       backHref="/dashboard/afh"
       headerBg="linear-gradient(135deg, #92400e, #b45309)"
       clientFilter={searchParams?.client}
+      caregiverFilter={searchParams?.caregiver}
       daysFilter={searchParams?.days}
     />
   );

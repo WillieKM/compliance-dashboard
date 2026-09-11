@@ -23,18 +23,19 @@ interface Props {
   backHref: string;
   headerBg: string;
   clientFilter?: string;
+  caregiverFilter?: string;
   daysFilter?: string;
 }
 
 export default async function NotesReviewPage({
-  settingSlug, settingLabel, backHref, headerBg, clientFilter, daysFilter,
+  settingSlug, settingLabel, backHref, headerBg, clientFilter, caregiverFilter, daysFilter,
 }: Props) {
   const profile = await getCurrentProfile();
   if (!profile) redirect("/login");
 
-  // Build query — no hard limit when filtering by client or showing all
   const days = daysFilter ?? "30";
   const baseSlug = settingSlug === "assisted-living" ? "home-care" : settingSlug;
+  const isSingleFilter = !!(clientFilter || caregiverFilter);
 
   let query = admin()
     .from("care_visits")
@@ -55,19 +56,18 @@ export default async function NotesReviewPage({
     .order("clock_in_time", { ascending: false });
 
   if (clientFilter) {
-    // Per-client view: all notes ever, no limit
     query = (query as any).eq("client_name", clientFilter);
+  } else if (caregiverFilter) {
+    query = (query as any).eq("caregiver_name", caregiverFilter);
   } else {
-    // Date range filter
     if (days !== "all") {
       const cutoff = new Date();
       cutoff.setDate(cutoff.getDate() - parseInt(days));
       query = (query as any).gte("clock_in_time", cutoff.toISOString());
     }
-    (query as any).limit(days === "all" ? 2000 : 500);
   }
 
-  const { data } = await query.limit(clientFilter ? 2000 : days === "all" ? 2000 : 500);
+  const { data } = await query.limit(isSingleFilter ? 2000 : days === "all" ? 2000 : 500);
 
   type Report = {
     id: string; caregiver_notes: string | null; mood_demeanor: string | null;
@@ -181,6 +181,109 @@ export default async function NotesReviewPage({
             <NoteSignOffButton reportId={n.reportId} clearedBy={n.clearedBy}
               clearedAt={n.clearedAt} supervisorNotes={n.supervisorNotes} />
           )}
+        </div>
+      </div>
+    );
+  }
+
+  // ── Per-caregiver full history view ──────────────────────────────────────────
+  if (caregiverFilter) {
+    const clients = [...new Set(allEntries.map(n => n.client).filter(Boolean))];
+    const oldest = allEntries.length ? fmtDate(allEntries[allEntries.length - 1].clockIn) : "—";
+    const newest = allEntries.length ? fmtDate(allEntries[0].clockIn) : "—";
+
+    // Group by client for this caregiver
+    const byClient = new Map<string, typeof regularNotes>();
+    for (const note of allEntries) {
+      const key = note.client ?? "No Client Assigned";
+      if (!byClient.has(key)) byClient.set(key, []);
+      byClient.get(key)!.push(note);
+    }
+    const caregiverClientGroups = Array.from(byClient.entries()).sort((a, b) => {
+      const latestA = Math.max(...a[1].map(n => new Date(n.clockIn ?? 0).getTime()));
+      const latestB = Math.max(...b[1].map(n => new Date(n.clockIn ?? 0).getTime()));
+      return latestB - latestA;
+    });
+
+    return (
+      <div className="space-y-6">
+        <style>{`
+          @media print {
+            body * { visibility: hidden; }
+            #notes-print-area, #notes-print-area * { visibility: visible; }
+            #notes-print-area { position: absolute; left: 0; top: 0; width: 100%; }
+            .print\\:hidden { display: none !important; }
+          }
+        `}</style>
+
+        <div className="print:hidden flex items-start justify-between flex-wrap gap-4">
+          <div>
+            <Link href={baseUrl} className="text-sm font-semibold text-slate-500 hover:text-slate-900">← All Staff</Link>
+            <h1 className="text-2xl font-bold text-slate-900 mt-1">👤 {caregiverFilter}</h1>
+            <p className="text-slate-500 text-sm mt-0.5">
+              All notes by this caregiver · {allEntries.length} note{allEntries.length !== 1 ? "s" : ""} · {oldest} – {newest}
+            </p>
+            {clients.length > 0 && (
+              <p className="text-xs text-slate-400 mt-1">Clients served: {clients.join(", ")}</p>
+            )}
+          </div>
+          <PrintButton label="🖨️ Print / Export PDF" />
+        </div>
+
+        <div className="hidden print:block mb-4">
+          <h1 className="text-xl font-bold">Care Notes — {caregiverFilter}</h1>
+          <p className="text-sm text-slate-500">{settingLabel} · {oldest} – {newest} · {allEntries.length} notes</p>
+          <p className="text-sm text-slate-500">Clients: {clients.join(", ")}</p>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 print:hidden">
+          {[
+            { label: "Total Notes",    value: allEntries.length },
+            { label: "Clients Served", value: clients.length },
+            { label: "Open Incidents", value: withFlags.length },
+            { label: "Signed Off",     value: allEntries.filter(n => n.cleared).length },
+          ].map(s => (
+            <div key={s.label} className="bg-white rounded-xl border border-slate-200 p-4 text-center shadow-sm">
+              <p className="text-3xl font-bold text-slate-900">{s.value}</p>
+              <p className="text-xs font-semibold uppercase tracking-wide mt-1 text-slate-500">{s.label}</p>
+            </div>
+          ))}
+        </div>
+
+        <div id="notes-print-area" className="space-y-5">
+          {withFlags.length > 0 && (
+            <div>
+              <h2 className="text-base font-bold text-red-800 mb-3">⚠ Open Incident Reports ({withFlags.length})</h2>
+              <div className="space-y-3">{withFlags.map(n => <NoteCard key={`${n.visitId}-${n.reportId}`} n={n} />)}</div>
+            </div>
+          )}
+          {caregiverClientGroups.length === 0 ? (
+            <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center">
+              <p className="text-4xl mb-3">📝</p>
+              <p className="text-slate-500">No notes found for this caregiver.</p>
+            </div>
+          ) : caregiverClientGroups.map(([clientName, cnotes]) => (
+            <div key={clientName} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+              <div className="px-5 py-3 bg-slate-50 border-b border-slate-200 flex items-center justify-between flex-wrap gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">🏠</span>
+                  <h3 className="font-bold text-slate-900">{clientName}</h3>
+                  <span className="text-xs text-slate-400">{cnotes.length} note{cnotes.length !== 1 ? "s" : ""}</span>
+                </div>
+                <Link href={`${baseUrl}?client=${encodeURIComponent(clientName)}&days=all`}
+                  className="text-xs font-semibold hover:underline print:hidden" style={{ color: "#1a3a52" }}>
+                  Full client history →
+                </Link>
+              </div>
+              <div className="divide-y divide-slate-100">
+                {cnotes.map((n, i) => (
+                  <div key={`${n.visitId}-${n.reportId}-${i}`} className={`p-4 ${n.cleared ? "opacity-60" : ""}`}>
+                    <NoteCard n={n} showFlag={false} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     );
@@ -377,7 +480,7 @@ export default async function NotesReviewPage({
                       {lastNote ? ` · Last: ${fmtDate(lastNote)}` : ""}
                     </span>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     {unsigned > 0 && (
                       <span className="text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full font-semibold">
                         {unsigned} awaiting sign-off
@@ -387,10 +490,15 @@ export default async function NotesReviewPage({
                       <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-semibold">✓ All signed off</span>
                     )}
                     <Link
+                      href={`/dashboard/home-care/client-record?name=${encodeURIComponent(clientName)}`}
+                      className="text-xs font-semibold px-2 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700">
+                      Full record
+                    </Link>
+                    <Link
                       href={`${baseUrl}?client=${encodeURIComponent(clientName)}&days=all`}
                       className="text-xs font-semibold hover:underline"
                       style={{ color: "#1a3a52" }}>
-                      Full history →
+                      Notes only →
                     </Link>
                   </div>
                 </div>
@@ -406,6 +514,32 @@ export default async function NotesReviewPage({
           })}
         </div>
       ) : null}
+
+      {/* Browse by staff member */}
+      {allEntries.length > 0 && (() => {
+        const staffMap = new Map<string, number>();
+        for (const n of allEntries) {
+          const name = n.caregiver ?? "Unknown";
+          staffMap.set(name, (staffMap.get(name) ?? 0) + 1);
+        }
+        const staffList = Array.from(staffMap.entries()).sort((a, b) => b[1] - a[1]);
+        return (
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+            <h2 className="text-base font-bold text-slate-800 mb-3">Browse by Staff Member</h2>
+            <p className="text-xs text-slate-400 mb-4">Click any name to see all their notes across all clients — useful for reviewing agency staff records.</p>
+            <div className="flex flex-wrap gap-2">
+              {staffList.map(([name, count]) => (
+                <Link key={name}
+                  href={`${baseUrl}?caregiver=${encodeURIComponent(name)}&days=all`}
+                  className="flex items-center gap-2 px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 hover:border-slate-300 transition-all">
+                  <span className="text-sm font-semibold text-slate-800">👤 {name}</span>
+                  <span className="text-xs text-slate-400">{count} note{count !== 1 ? "s" : ""}</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
