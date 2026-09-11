@@ -100,6 +100,20 @@ export default async function NotesReviewPage({ settingSlug, settingLabel, backH
   const clearedEntries  = allEntries.filter(n => (n.fallFlag || n.incidentFlag) && n.cleared);
   const regularNotes    = allEntries.filter(n => !n.fallFlag && !n.incidentFlag);
 
+  // Group regular notes by client, newest-first within each group
+  const notesByClient = new Map<string, typeof regularNotes>();
+  for (const note of regularNotes) {
+    const key = note.client ?? "No Client Assigned";
+    if (!notesByClient.has(key)) notesByClient.set(key, []);
+    notesByClient.get(key)!.push(note);
+  }
+  const clientGroups = Array.from(notesByClient.entries())
+    .sort((a, b) => {
+      const latestA = Math.max(...a[1].map(n => new Date(n.clockIn ?? 0).getTime()));
+      const latestB = Math.max(...b[1].map(n => new Date(n.clockIn ?? 0).getTime()));
+      return latestB - latestA;
+    });
+
   function fmtDate(s: string | null) {
     if (!s) return "—";
     return new Date(s).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
@@ -194,7 +208,11 @@ export default async function NotesReviewPage({ settingSlug, settingLabel, backH
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="bg-white rounded-xl border border-slate-200 p-4 text-center shadow-sm">
+          <p className="text-3xl font-bold text-slate-900">{clientGroups.length}</p>
+          <p className="text-xs text-slate-500 uppercase tracking-wide mt-1">Clients</p>
+        </div>
         <div className="bg-white rounded-xl border border-slate-200 p-4 text-center shadow-sm">
           <p className="text-3xl font-bold text-slate-900">{allEntries.length}</p>
           <p className="text-xs text-slate-500 uppercase tracking-wide mt-1">Total Notes</p>
@@ -202,10 +220,6 @@ export default async function NotesReviewPage({ settingSlug, settingLabel, backH
         <div className={`rounded-xl border-2 p-4 text-center ${withFlags.length > 0 ? "bg-red-50 border-red-200" : "bg-slate-50 border-slate-200"}`}>
           <p className={`text-3xl font-bold ${withFlags.length > 0 ? "text-red-700" : "text-slate-500"}`}>{withFlags.length}</p>
           <p className={`text-xs uppercase tracking-wide mt-1 font-semibold ${withFlags.length > 0 ? "text-red-600" : "text-slate-400"}`}>Pending Incidents</p>
-        </div>
-        <div className="bg-emerald-50 rounded-xl border border-emerald-200 p-4 text-center">
-          <p className="text-3xl font-bold text-emerald-700">{clearedEntries.length}</p>
-          <p className="text-xs text-emerald-600 uppercase tracking-wide mt-1 font-semibold">Cleared</p>
         </div>
         <div className="bg-white rounded-xl border border-slate-200 p-4 text-center shadow-sm">
           <p className="text-3xl font-bold text-slate-900">{new Set(allEntries.map(n => n.caregiver)).size}</p>
@@ -239,21 +253,55 @@ export default async function NotesReviewPage({ settingSlug, settingLabel, backH
         </div>
       )}
 
-      {/* Regular notes */}
+      {/* Notes grouped by client */}
       {regularNotes.length === 0 && withFlags.length === 0 ? (
         <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center shadow-sm">
           <p className="text-4xl mb-4">📝</p>
           <h3 className="text-lg font-bold text-slate-700 mb-2">No notes submitted yet</h3>
           <p className="text-slate-500">Notes appear here after staff clock out and submit their service report.</p>
         </div>
-      ) : regularNotes.length > 0 ? (
-        <div>
-          <h2 className="text-lg font-bold text-slate-800 mb-3">All Notes</h2>
-          <div className="space-y-3">
-            {regularNotes.map((n, i) => (
-              <NoteCard key={`${n.visitId}-${i}`} n={n} showFlag={false} />
-            ))}
-          </div>
+      ) : clientGroups.length > 0 ? (
+        <div className="space-y-6">
+          <h2 className="text-lg font-bold text-slate-800">Notes by Client</h2>
+          {clientGroups.map(([clientName, notes]) => {
+            const unsigned = notes.filter(n => !n.cleared).length;
+            const lastNote = notes[0]?.clockIn;
+            return (
+              <div key={clientName} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                {/* Client header */}
+                <div className="px-5 py-3 bg-slate-50 border-b border-slate-200 flex items-center justify-between flex-wrap gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">🏠</span>
+                    <h3 className="font-bold text-slate-900">{clientName}</h3>
+                    <span className="text-xs text-slate-400">
+                      {notes.length} note{notes.length !== 1 ? "s" : ""}
+                      {lastNote ? ` · Last: ${fmtDate(lastNote)}` : ""}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {unsigned > 0 && (
+                      <span className="text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full font-semibold">
+                        {unsigned} awaiting sign-off
+                      </span>
+                    )}
+                    {unsigned === 0 && notes.length > 0 && (
+                      <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-semibold">
+                        ✓ All signed off
+                      </span>
+                    )}
+                  </div>
+                </div>
+                {/* Client notes */}
+                <div className="divide-y divide-slate-100">
+                  {notes.map((n, i) => (
+                    <div key={`${n.visitId}-${n.reportId}-${i}`} className={`p-4 ${n.cleared ? "opacity-60" : ""}`}>
+                      <NoteCard n={n} showFlag={false} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
         </div>
       ) : null}
     </div>
