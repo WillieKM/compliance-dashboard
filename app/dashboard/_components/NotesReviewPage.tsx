@@ -33,7 +33,7 @@ export default async function NotesReviewPage({
   const profile = await getCurrentProfile();
   if (!profile) redirect("/login");
 
-  const days = daysFilter ?? "30";
+  const days = daysFilter ?? "all";
   const baseSlug = settingSlug === "assisted-living" ? "home-care" : settingSlug;
   const isSingleFilter = !!(clientFilter || caregiverFilter);
 
